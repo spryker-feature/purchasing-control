@@ -1,0 +1,33 @@
+"Cost Centers",Kostenstellen
+"Create Cost Center","Kostenstelle erstellen"
+"Edit Cost Center","Kostenstelle bearbeiten"
+"Back to Cost Centers","Zurück zu Kostenstellen"
+Budgets,Budgets
+"Create Budget","Budget erstellen"
+"Create Budget for %costCenter%","Budget für %costCenter% erstellen"
+"Edit Budget for %costCenter%","Budget für %costCenter% bearbeiten"
+"Back to Budgets","Zurück zu Budgets"
+Save,Speichern
+Cancel,Abbrechen
+Edit,Bearbeiten
+ID,ID
+Name,Name
+Description,Beschreibung
+Amount,Betrag
+Currency,Währung
+"Starts At","Beginnt am"
+"Ends At","Endet am"
+"Enforcement Rule",Durchsetzungsregel
+"Business Units",Geschäftseinheiten
+"Remaining Amount","Verbleibender Betrag"
+Period,Zeitraum
+Rule,Regel
+Status,Status
+"Created At","Erstellt am"
+Actions,Aktionen
+Active,Aktiv
+Inactive,Inaktiv
+"Budget start date must be before end date.","Das Startdatum des Budgets muss vor dem Enddatum liegen."
+"Budget amount must be greater than zero.","Der Budgetbetrag muss größer als Null sein."
+"Budget currency must be a 3-character ISO code.","Die Budgetwährung muss ein 3-stelliger ISO-Code sein."
+"Cost center name must not be empty.","Der Name der Kostenstelle darf nicht leer sein."

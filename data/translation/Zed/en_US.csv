@@ -1,0 +1,33 @@
+"Cost Centers","Cost Centers"
+"Create Cost Center","Create Cost Center"
+"Edit Cost Center","Edit Cost Center"
+"Back to Cost Centers","Back to Cost Centers"
+Budgets,Budgets
+"Create Budget","Create Budget"
+"Create Budget for %costCenter%","Create Budget for %costCenter%"
+"Edit Budget for %costCenter%","Edit Budget for %costCenter%"
+"Back to Budgets","Back to Budgets"
+Save,Save
+Cancel,Cancel
+Edit,Edit
+ID,ID
+Name,Name
+Description,Description
+Amount,Amount
+Currency,Currency
+"Starts At","Starts At"
+"Ends At","Ends At"
+"Enforcement Rule","Enforcement Rule"
+"Business Units","Business Units"
+"Remaining Amount","Remaining Amount"
+Period,Period
+Rule,Rule
+Status,Status
+"Created At","Created At"
+Actions,Actions
+Active,Active
+Inactive,Inactive
+"Budget start date must be before end date.","Budget start date must be before end date."
+"Budget amount must be greater than zero.","Budget amount must be greater than zero."
+"Budget currency must be a 3-character ISO code.","Budget currency must be a 3-character ISO code."
+"Cost center name must not be empty.","Cost center name must not be empty."

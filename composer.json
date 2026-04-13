@@ -1,0 +1,63 @@
+{
+    "name": "spryker-feature/purchasing-control",
+    "type": "library",
+    "description": "PurchasingControl module",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.3",
+        "spryker/checkout-extension": "^1.3.0",
+        "spryker/company-business-unit": "^2.0.0",
+        "spryker/currency": "^4.0.0",
+        "spryker/customer": "^7.0.0",
+        "spryker/gui": "^5.0.0",
+        "spryker/kernel": "^3.30.0",
+        "spryker/propel-orm": "^1.0.0",
+        "spryker/quote": "^2.0.0",
+        "spryker/quote-approval": "^1.5.0",
+        "spryker/quote-extension": "^1.0.0",
+        "spryker/sales": "^11.0.0",
+        "spryker/symfony": "^3.0.0",
+        "spryker/util-date-time": "^1.6.0",
+        "spryker/uuid-behavior": "^1.3.0",
+        "spryker/zed-request": "^3.0.0"
+    },
+    "require-dev": {
+        "spryker/code-sniffer": "*",
+        "spryker/country": "*",
+        "spryker/oms": "*",
+        "spryker/propel": "*",
+        "spryker/router": "*",
+        "spryker/testify": "*"
+    },
+    "suggest": {
+        "spryker/oms": "Use OMS to manage order states and processes.",
+        "spryker/router": "Use Router when the storefront needs to be able to route to the purchasing control module."
+    },
+    "autoload": {
+        "psr-4": {
+            "SprykerFeature\\": "src/SprykerFeature/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "SprykerFeatureTest\\": "tests/SprykerFeatureTest/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "scripts": {
+        "cs-check": "phpcs -p -s --standard=vendor/spryker/code-sniffer/SprykerStrict/ruleset.xml src/ tests/",
+        "cs-fix": "phpcbf -p --standard=vendor/spryker/code-sniffer/SprykerStrict/ruleset.xml src/ tests/"
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.0.x-dev"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        },
+        "sort-packages": true
+    }
+}

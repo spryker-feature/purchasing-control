@@ -1,0 +1,83 @@
+{% extends template('widget') %}
+
+{% define data = {
+    costCenters: _widget.costCenters,
+    selectedCostCenter: _widget.selectedCostCenter,
+    budgets: _widget.budgets,
+    selectedBudget: _widget.selectedBudget,
+    quote: _widget.quote,
+    isLocked: _widget.isLocked,
+} %}
+
+{% block body %}
+    {% if data.costCenters|length > 0 %}
+        <div class="cost-center-selector">
+            {% if data.isLocked %}
+                {# Quote is pending approval — cost center and budget selection is read-only #}
+                {% if data.selectedCostCenter %}
+                    <div class="cost-center-selector__field">
+                        <label>{{ 'purchasing_control.selector.label' | trans }}:</label>
+                        <span class="cost-center-selector__value">{{ data.selectedCostCenter.name }}</span>
+                    </div>
+                {% endif %}
+
+                {% if data.selectedBudget %}
+                    <div class="cost-center-selector__field">
+                        <label>{{ 'purchasing_control.budget.selector.label' | trans }}:</label>
+                        <span class="cost-center-selector__value">{{ data.selectedBudget.name }}</span>
+                    </div>
+                    <div class="cost-center-selector__remaining">
+                        {{ 'purchasing_control.budget.remaining' | trans }}:
+                        <strong>{{ data.selectedBudget.remainingAmount | money(true, data.quote.currency.code) }}</strong>
+                    </div>
+                {% endif %}
+            {% else %}
+                <form method="post" action="{{ '/cost-center/update-quote' }}">
+                    {% if data.costCenters|length > 1 %}
+                        <div class="cost-center-selector__field">
+                            <label for="cost-center-select">{{ 'purchasing_control.selector.label' | trans }}</label>
+                            <select id="cost-center-select" name="idCostCenter" class="cost-center-selector__select" onchange="this.form.submit()">
+                                <option value="">{{ 'purchasing_control.selector.placeholder' | trans }}</option>
+                                {% for costCenter in data.costCenters %}
+                                    <option value="{{ costCenter.idCostCenter }}"
+                                        {% if data.selectedCostCenter and data.selectedCostCenter.idCostCenter == costCenter.idCostCenter %}selected{% endif %}>
+                                        {{ costCenter.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    {% else %}
+                        {# Single cost center — pre-selected, hidden from buyer #}
+                        <input type="hidden" name="idCostCenter" value="{{ data.costCenters[0].idCostCenter }}">
+                    {% endif %}
+
+                    {% if data.selectedCostCenter %}
+                        {% if data.budgets|length > 1 %}
+                            <div class="cost-center-selector__field">
+                                <label for="budget-select">{{ 'purchasing_control.budget.selector.label' | trans }}</label>
+                                <select id="budget-select" name="idBudget" class="cost-center-selector__select" onchange="this.form.submit()">
+                                    {% for budget in data.budgets %}
+                                        <option value="{{ budget.idBudget }}"
+                                            {% if data.selectedBudget ? data.selectedBudget.idBudget == budget.idBudget : loop.first %}selected{% endif %}>
+                                            {{ budget.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        {% elseif data.budgets|length == 1 %}
+                            {# Single budget — auto-selected, hidden from buyer #}
+                            <input type="hidden" name="idBudget" value="{{ data.budgets[0].idBudget }}">
+                        {% endif %}
+
+                        {% if data.selectedBudget %}
+                            <div class="cost-center-selector__remaining">
+                                {{ 'purchasing_control.budget.remaining' | trans }}:
+                                <strong>{{ data.selectedBudget.remainingAmount | money(true, data.quote.currency.code) }}</strong>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                </form>
+            {% endif %}
+        </div>
+    {% endif %}
+{% endblock %}

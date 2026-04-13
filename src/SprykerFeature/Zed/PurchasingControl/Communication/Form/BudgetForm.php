@@ -1,0 +1,155 @@
+<?php
+
+/**
+ * Copyright © 2016-present Spryker Systems GmbH. All rights reserved.
+ * Use of this software requires acceptance of the Evaluation License Agreement. See LICENSE file.
+ */
+
+namespace SprykerFeature\Zed\PurchasingControl\Communication\Form;
+
+use Spryker\Zed\Kernel\Communication\Form\AbstractType;
+use SprykerFeature\Shared\PurchasingControl\PurchasingControlConfig;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
+use Symfony\Component\Form\Extension\Core\Type\NumberType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\GreaterThan;
+use Symfony\Component\Validator\Constraints\NotBlank;
+
+class BudgetForm extends AbstractType
+{
+    public const string FIELD_NAME = 'name';
+
+    public const string FIELD_AMOUNT = 'amount';
+
+    public const string FIELD_CURRENCY_ISO_CODE = 'currencyIsoCode';
+
+    public const string FIELD_STARTS_AT = 'startsAt';
+
+    public const string FIELD_ENDS_AT = 'endsAt';
+
+    public const string FIELD_ENFORCEMENT_RULE = 'enforcementRule';
+
+    public const string FIELD_IS_ACTIVE = 'isActive';
+
+    public const string OPTION_CURRENCY_CHOICES = 'currency_choices';
+
+    public function buildForm(FormBuilderInterface $builder, array $options): void
+    {
+        $this
+            ->addNameField($builder)
+            ->addAmountField($builder)
+            ->addCurrencyIsoCodeField($builder, $options[static::OPTION_CURRENCY_CHOICES])
+            ->addStartsAtField($builder)
+            ->addEndsAtField($builder)
+            ->addEnforcementRuleField($builder)
+            ->addIsActiveField($builder);
+    }
+
+    public function configureOptions(OptionsResolver $resolver): void
+    {
+        $resolver->setRequired(static::OPTION_CURRENCY_CHOICES);
+        $resolver->setAllowedTypes(static::OPTION_CURRENCY_CHOICES, 'array');
+    }
+
+    protected function addNameField(FormBuilderInterface $builder): static
+    {
+        $builder->add(static::FIELD_NAME, TextType::class, [
+            'label' => 'Name',
+            'constraints' => [new NotBlank()],
+            'attr' => ['data-qa' => 'budget-name'],
+        ]);
+
+        return $this;
+    }
+
+    protected function addAmountField(FormBuilderInterface $builder): static
+    {
+        $builder->add(static::FIELD_AMOUNT, NumberType::class, [
+            'label' => 'Amount',
+            'scale' => 2,
+            'constraints' => [
+                new NotBlank(),
+                new GreaterThan(['value' => 0]),
+            ],
+            'attr' => ['data-qa' => 'budget-amount'],
+        ]);
+
+        return $this;
+    }
+
+    /**
+     * @param array<string, string> $currencyChoices
+     */
+    protected function addCurrencyIsoCodeField(FormBuilderInterface $builder, array $currencyChoices): static
+    {
+        $builder->add(static::FIELD_CURRENCY_ISO_CODE, ChoiceType::class, [
+            'label' => 'Currency',
+            'choices' => $currencyChoices,
+            'constraints' => [new NotBlank()],
+            'attr' => [
+                'data-qa' => 'budget-currency',
+                'class' => 'spryker-form-select2combobox',
+                'data-disable-search' => 'true',
+            ],
+        ]);
+
+        return $this;
+    }
+
+    protected function addStartsAtField(FormBuilderInterface $builder): static
+    {
+        $builder->add(static::FIELD_STARTS_AT, DateType::class, [
+            'label' => 'Starts At',
+            'widget' => 'single_text',
+            'input' => 'string',
+            'constraints' => [new NotBlank()],
+            'attr' => ['data-qa' => 'budget-starts-at'],
+        ]);
+
+        return $this;
+    }
+
+    protected function addEndsAtField(FormBuilderInterface $builder): static
+    {
+        $builder->add(static::FIELD_ENDS_AT, DateType::class, [
+            'label' => 'Ends At',
+            'widget' => 'single_text',
+            'input' => 'string',
+            'constraints' => [new NotBlank()],
+            'attr' => ['data-qa' => 'budget-ends-at'],
+        ]);
+
+        return $this;
+    }
+
+    protected function addEnforcementRuleField(FormBuilderInterface $builder): static
+    {
+        $builder->add(static::FIELD_ENFORCEMENT_RULE, ChoiceType::class, [
+            'label' => 'Enforcement Rule',
+            'choices' => [
+                'Block order' => PurchasingControlConfig::ENFORCEMENT_RULE_BLOCK,
+                'Warn only' => PurchasingControlConfig::ENFORCEMENT_RULE_WARN,
+                'Require approval' => PurchasingControlConfig::ENFORCEMENT_RULE_REQUIRE_APPROVAL,
+            ],
+            'constraints' => [new NotBlank()],
+            'attr' => ['data-qa' => 'budget-enforcement-rule'],
+        ]);
+
+        return $this;
+    }
+
+    protected function addIsActiveField(FormBuilderInterface $builder): static
+    {
+        $builder->add(static::FIELD_IS_ACTIVE, CheckboxType::class, [
+            'label' => 'Active',
+            'required' => false,
+            'attr' => ['data-qa' => 'budget-is-active'],
+        ]);
+
+        return $this;
+    }
+}

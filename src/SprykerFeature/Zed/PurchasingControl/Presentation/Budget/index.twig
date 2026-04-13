@@ -1,0 +1,22 @@
+{% extends '@Gui/Layout/layout.twig' %}
+
+{% set widget_title = 'Budgets of "' ~ costCenterName ~ '"' %}
+
+{% block head_title -%}
+    {{ widget_title }}
+{%- endblock %}
+
+{% block section_title %}{{ widget_title }}{% endblock %}
+
+{% block action %}
+    {{ createActionButton(url('/purchasing-control/budget/create', {'id-cost-center': idCostCenter}), 'Create Budget' | trans) }}
+    {{ backActionButton(url('/purchasing-control/cost-center/index'), 'Back to Cost Centers' | trans) }}
+{% endblock %}
+
+{% block content %}
+    {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Budgets' | trans } %}
+        {% block widget_content %}
+            {{ budgetTable | raw }}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

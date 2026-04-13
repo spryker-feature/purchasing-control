@@ -1,0 +1,117 @@
+<?xml version="1.0"?>
+<database xmlns="spryker:schema-01"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="spryker:schema-01 https://static.spryker.com/schema-01.xsd"
+          name="zed"
+          namespace="Orm\Zed\PurchasingControl\Persistence"
+          package="src.Orm.Zed.PurchasingControl.Persistence">
+
+    <table name="spy_cost_center" idMethod="native" allowPkInsert="true">
+        <column name="id_cost_center" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
+        <column name="name" type="VARCHAR" size="255" required="true"/>
+        <column name="description" type="LONGVARCHAR"/>
+<column name="is_active" type="BOOLEAN" required="true" default="false"/>
+        <column name="uuid" type="VARCHAR" size="36"/>
+
+        <unique name="spy_cost_center-uuid">
+            <unique-column name="uuid"/>
+        </unique>
+
+        <behavior name="timestampable"/>
+        <behavior name="uuid">
+            <parameter name="key_columns" value="id_cost_center"/>
+        </behavior>
+
+        <id-method-parameter value="spy_cost_center_pk_seq"/>
+    </table>
+
+    <table name="spy_cost_center_to_company_business_unit" idMethod="native" allowPkInsert="true">
+        <column name="id_cost_center_to_company_business_unit" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
+        <column name="fk_cost_center" type="INTEGER" required="true"/>
+        <column name="fk_company_business_unit" type="INTEGER" required="true"/>
+
+        <foreign-key name="spy_cost_center_to_company_business_unit-fk_cost_center"
+                     foreignTable="spy_cost_center"
+                     onDelete="CASCADE">
+            <reference local="fk_cost_center" foreign="id_cost_center"/>
+        </foreign-key>
+
+        <foreign-key name="spy_cost_center_to_cbu-fk_company_business_unit"
+                     foreignTable="spy_company_business_unit">
+            <reference local="fk_company_business_unit" foreign="id_company_business_unit"/>
+        </foreign-key>
+
+        <unique name="spy_cost_center_to_company_business_unit-unique">
+            <unique-column name="fk_cost_center"/>
+            <unique-column name="fk_company_business_unit"/>
+        </unique>
+
+        <index name="spy_cost_center_to_company_business_unit-fk_cost_center-index">
+            <index-column name="fk_cost_center"/>
+        </index>
+
+        <behavior name="timestampable"/>
+
+        <id-method-parameter value="spy_cost_center_to_company_business_unit_pk_seq"/>
+    </table>
+
+    <table name="spy_budget" idMethod="native" allowPkInsert="true">
+        <column name="id_budget" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
+        <column name="fk_cost_center" type="INTEGER" required="true"/>
+        <column name="name" type="VARCHAR" size="255" required="true"/>
+        <column name="amount" type="INTEGER" required="true"/>
+        <column name="currency_iso_code" type="VARCHAR" size="3" required="true"/>
+        <column name="starts_at" type="DATE" required="true"/>
+        <column name="ends_at" type="DATE" required="true"/>
+        <column name="enforcement_rule" type="ENUM" valueSet="block,warn,require_approval" required="true"/>
+        <column name="is_active" type="BOOLEAN" required="true" default="false"/>
+        <column name="uuid" type="VARCHAR" size="36"/>
+
+        <foreign-key name="spy_budget-fk_cost_center"
+                     foreignTable="spy_cost_center"
+                     onDelete="CASCADE">
+            <reference local="fk_cost_center" foreign="id_cost_center"/>
+        </foreign-key>
+
+        <unique name="spy_budget-uuid">
+            <unique-column name="uuid"/>
+        </unique>
+
+        <index name="spy_budget-fk_cost_center-index">
+            <index-column name="fk_cost_center"/>
+        </index>
+
+        <behavior name="timestampable"/>
+        <behavior name="uuid">
+            <parameter name="key_columns" value="id_budget"/>
+        </behavior>
+
+        <id-method-parameter value="spy_budget_pk_seq"/>
+    </table>
+
+    <table name="spy_budget_consumption" idMethod="native" allowPkInsert="true">
+        <column name="id_budget_consumption" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
+        <column name="fk_budget" type="INTEGER" required="true"/>
+        <column name="fk_sales_order" type="INTEGER"/>
+        <column name="amount" type="INTEGER" required="true"/>
+
+        <foreign-key name="spy_budget_consumption-fk_budget"
+                     foreignTable="spy_budget">
+            <reference local="fk_budget" foreign="id_budget"/>
+        </foreign-key>
+
+        <foreign-key name="spy_budget_consumption-fk_sales_order"
+                     foreignTable="spy_sales_order">
+            <reference local="fk_sales_order" foreign="id_sales_order"/>
+        </foreign-key>
+
+        <index name="spy_budget_consumption-fk_budget-index">
+            <index-column name="fk_budget"/>
+        </index>
+
+        <behavior name="timestampable"/>
+
+        <id-method-parameter value="spy_budget_consumption_pk_seq"/>
+    </table>
+
+</database>

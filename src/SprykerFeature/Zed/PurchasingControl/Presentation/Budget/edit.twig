@@ -1,0 +1,43 @@
+{% extends '@Gui/Layout/layout.twig' %}
+
+{% set widget_title = ('Edit Budget for %costCenter%' | trans({'%costCenter%': costCenterName})) %}
+
+{% block head_title -%}
+    {{ widget_title }}
+{%- endblock %}
+
+{% block section_title %}{{ widget_title }}{% endblock %}
+
+{% block action %}
+    {{ backActionButton(url('/purchasing-control/budget/index', {'id-cost-center': idCostCenter}), 'Back to Budgets' | trans) }}
+{% endblock %}
+
+{% block content %}
+    {% embed '@Gui/Partials/widget.twig' with { widget_title: widget_title } %}
+        {% block widget_content %}
+            {{ form_start(budgetForm) }}
+            {{ form_errors(budgetForm) }}
+
+            <div class="row">
+                <div class="col-sm-6">
+                    {{ form_row(budgetForm.name) }}
+                    {{ form_row(budgetForm.amount) }}
+                    {{ form_row(budgetForm.currencyIsoCode) }}
+                    {{ form_row(budgetForm.enforcementRule) }}
+                    {{ form_row(budgetForm.isActive) }}
+                </div>
+                <div class="col-sm-6">
+                    {{ form_row(budgetForm.startsAt) }}
+                    {{ form_row(budgetForm.endsAt) }}
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">{{ 'Save' | trans }}</button>
+                <a href="{{ url('/purchasing-control/budget/index', {'id-cost-center': idCostCenter}) }}" class="btn btn-default">{{ 'Cancel' | trans }}</a>
+            </div>
+
+            {{ form_end(budgetForm) }}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}
