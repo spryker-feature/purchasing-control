@@ -1,0 +1,16 @@
+{# @var data.order \Generated\Shared\Transfer\OrderTransfer #}
+
+{% extends model('component') %}
+
+{% define config = {
+    name: 'order-history-table-cost-center-columns',
+} %}
+
+{% define data = {
+    order: required,
+} %}
+
+{% block body %}
+    <td>{{ data.order.costCenter.name | default('') }}</td>
+    <td>{{ data.order.budget.name | default('') }}</td>
+{% endblock %}

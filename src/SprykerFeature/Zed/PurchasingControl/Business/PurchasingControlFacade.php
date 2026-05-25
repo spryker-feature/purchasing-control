@@ -7,16 +7,16 @@
 
 namespace SprykerFeature\Zed\PurchasingControl\Business;
 
+use Generated\Shared\Transfer\BudgetCollectionRequestTransfer;
+use Generated\Shared\Transfer\BudgetCollectionResponseTransfer;
 use Generated\Shared\Transfer\BudgetCollectionTransfer;
-use Generated\Shared\Transfer\BudgetResponseTransfer;
-use Generated\Shared\Transfer\BudgetTransfer;
-use Generated\Shared\Transfer\CheckoutResponseTransfer;
+use Generated\Shared\Transfer\BudgetCriteriaTransfer;
+use Generated\Shared\Transfer\CostCenterCollectionRequestTransfer;
+use Generated\Shared\Transfer\CostCenterCollectionResponseTransfer;
 use Generated\Shared\Transfer\CostCenterCollectionTransfer;
 use Generated\Shared\Transfer\CostCenterCriteriaTransfer;
-use Generated\Shared\Transfer\CostCenterResponseTransfer;
-use Generated\Shared\Transfer\CostCenterTransfer;
-use Generated\Shared\Transfer\QuoteTransfer;
-use Generated\Shared\Transfer\SaveOrderTransfer;
+use Generated\Shared\Transfer\CostCenterQuoteUpdateRequestTransfer;
+use Generated\Shared\Transfer\CostCenterQuoteUpdateResponseTransfer;
 use Spryker\Zed\Kernel\Business\AbstractFacade;
 
 /**
@@ -31,11 +31,11 @@ class PurchasingControlFacade extends AbstractFacade implements PurchasingContro
      *
      * @api
      */
-    public function createCostCenter(CostCenterTransfer $costCenterTransfer): CostCenterResponseTransfer
+    public function createCostCenterCollection(CostCenterCollectionRequestTransfer $costCenterCollectionRequestTransfer): CostCenterCollectionResponseTransfer
     {
         return $this->getFactory()
-            ->createCostCenterWriter()
-            ->createCostCenter($costCenterTransfer);
+            ->createCostCenterCreator()
+            ->createCostCenterCollection($costCenterCollectionRequestTransfer);
     }
 
     /**
@@ -43,11 +43,11 @@ class PurchasingControlFacade extends AbstractFacade implements PurchasingContro
      *
      * @api
      */
-    public function updateCostCenter(CostCenterTransfer $costCenterTransfer): CostCenterResponseTransfer
+    public function updateCostCenterCollection(CostCenterCollectionRequestTransfer $costCenterCollectionRequestTransfer): CostCenterCollectionResponseTransfer
     {
         return $this->getFactory()
-            ->createCostCenterWriter()
-            ->updateCostCenter($costCenterTransfer);
+            ->createCostCenterUpdater()
+            ->updateCostCenterCollection($costCenterCollectionRequestTransfer);
     }
 
     /**
@@ -67,11 +67,11 @@ class PurchasingControlFacade extends AbstractFacade implements PurchasingContro
      *
      * @api
      */
-    public function createBudget(BudgetTransfer $budgetTransfer): BudgetResponseTransfer
+    public function createBudgetCollection(BudgetCollectionRequestTransfer $budgetCollectionRequestTransfer): BudgetCollectionResponseTransfer
     {
         return $this->getFactory()
-            ->createBudgetWriter()
-            ->createBudget($budgetTransfer);
+            ->createBudgetCreator()
+            ->createBudgetCollection($budgetCollectionRequestTransfer);
     }
 
     /**
@@ -79,11 +79,11 @@ class PurchasingControlFacade extends AbstractFacade implements PurchasingContro
      *
      * @api
      */
-    public function updateBudget(BudgetTransfer $budgetTransfer): BudgetResponseTransfer
+    public function updateBudgetCollection(BudgetCollectionRequestTransfer $budgetCollectionRequestTransfer): BudgetCollectionResponseTransfer
     {
         return $this->getFactory()
-            ->createBudgetWriter()
-            ->updateBudget($budgetTransfer);
+            ->createBudgetUpdater()
+            ->updateBudgetCollection($budgetCollectionRequestTransfer);
     }
 
     /**
@@ -91,35 +91,11 @@ class PurchasingControlFacade extends AbstractFacade implements PurchasingContro
      *
      * @api
      */
-    public function getActiveBudgetsForCostCenter(int $idCostCenter, string $currencyIsoCode): BudgetCollectionTransfer
-    {
-        return $this->getFactory()
-            ->createBudgetReader()
-            ->getActiveBudgetsForCostCenter($idCostCenter, $currencyIsoCode);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @api
-     */
-    public function getCostCenterById(int $idCostCenter): CostCenterTransfer
-    {
-        return $this->getFactory()
-            ->createCostCenterReader()
-            ->getCostCenterById($idCostCenter);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @api
-     */
-    public function getBudgetById(int $idBudget): BudgetTransfer
+    public function getBudgetCollection(BudgetCriteriaTransfer $budgetCriteriaTransfer): BudgetCollectionTransfer
     {
         return $this->getFactory()
             ->createBudgetReader()
-            ->getBudgetById($idBudget);
+            ->getBudgetCollection($budgetCriteriaTransfer);
     }
 
     /**
@@ -127,58 +103,10 @@ class PurchasingControlFacade extends AbstractFacade implements PurchasingContro
      *
      * @api
      */
-    public function saveCostCenterToOrder(QuoteTransfer $quoteTransfer, SaveOrderTransfer $saveOrderTransfer): void
-    {
-        $this->getFactory()
-            ->createCostCenterOrderSaver()
-            ->saveCostCenterToOrder($quoteTransfer, $saveOrderTransfer);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @api
-     */
-    public function expandQuoteWithDefaultCostCenter(QuoteTransfer $quoteTransfer): QuoteTransfer
+    public function updateQuoteCostCenter(CostCenterQuoteUpdateRequestTransfer $requestTransfer): CostCenterQuoteUpdateResponseTransfer
     {
         return $this->getFactory()
-            ->createCostCenterQuoteExpander()
-            ->expand($quoteTransfer);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @api
-     */
-    public function validateBudgetForCheckout(QuoteTransfer $quoteTransfer, CheckoutResponseTransfer $checkoutResponseTransfer): bool
-    {
-        return $this->getFactory()
-            ->createBudgetValidator()
-            ->validateBudgetForCheckout($quoteTransfer, $checkoutResponseTransfer);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @api
-     */
-    public function consumeBudget(int $idBudget, int $idSalesOrder, int $amountInCents): void
-    {
-        $this->getFactory()
-            ->createBudgetConsumptionWriter()
-            ->consumeBudget($idBudget, $idSalesOrder, $amountInCents);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @api
-     */
-    public function restoreBudget(int $idSalesOrder): void
-    {
-        $this->getFactory()
-            ->createBudgetConsumptionWriter()
-            ->restoreBudget($idSalesOrder);
+            ->createCostCenterQuoteUpdater()
+            ->updateQuoteCostCenter($requestTransfer);
     }
 }

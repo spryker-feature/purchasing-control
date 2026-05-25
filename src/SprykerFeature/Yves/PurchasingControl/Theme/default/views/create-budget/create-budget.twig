@@ -1,0 +1,23 @@
+{% extends template('page-layout-company', 'CompanyPage') %}
+
+{% define data = {
+    form: _view.form,
+    costCenter: _view.costCenter,
+    title: 'purchasing_control.budget.create.title' | trans,
+    activePage: 'cost-center',
+    currentBreadcrumb: 'purchasing_control.budget.create.title',
+} %}
+
+{% block companyContent %}
+    <div class="box">
+        {% block form %}
+            {% include molecule('budget-form', 'PurchasingControl') with {
+                data: {
+                    form: data.form,
+                    formAction: url('company/cost-center/budget/create', { costCenterUuid: data.costCenter.uuid }),
+                    costCenterUuid: data.costCenter.uuid,
+                },
+            } only %}
+        {% endblock %}
+    </div>
+{% endblock %}

@@ -13,16 +13,28 @@ use Spryker\Zed\CheckoutExtension\Dependency\Plugin\CheckoutPreConditionPluginIn
 use Spryker\Zed\Kernel\Communication\AbstractPlugin;
 
 /**
- * {@inheritDoc}
- *
- * @api
- *
- * @method \SprykerFeature\Zed\PurchasingControl\Business\PurchasingControlFacadeInterface getFacade()
+ * @method \SprykerFeature\Zed\PurchasingControl\Business\PurchasingControlBusinessFactory getBusinessFactory()
  */
 class BudgetCheckoutPreConditionPlugin extends AbstractPlugin implements CheckoutPreConditionPluginInterface
 {
+    /**
+     * {@inheritDoc}
+     * - Does nothing and returns true when no budget is selected on the quote.
+     * - Validates that the selected budget is active and the current date falls within its period.
+     * - Validates that the budget has sufficient remaining balance to cover the quote grand total.
+     * - Adds a checkout error to the response when validation fails.
+     *
+     * @api
+     *
+     * @param \Generated\Shared\Transfer\QuoteTransfer $quoteTransfer
+     * @param \Generated\Shared\Transfer\CheckoutResponseTransfer $checkoutResponseTransfer
+     *
+     * @return bool
+     */
     public function checkCondition(QuoteTransfer $quoteTransfer, CheckoutResponseTransfer $checkoutResponseTransfer): bool
     {
-        return $this->getFacade()->validateBudgetForCheckout($quoteTransfer, $checkoutResponseTransfer);
+        return $this->getBusinessFactory()
+            ->createBudgetCheckoutValidator()
+            ->validateBudgetForCheckout($quoteTransfer, $checkoutResponseTransfer);
     }
 }

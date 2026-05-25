@@ -7,137 +7,138 @@
 
 namespace SprykerFeature\Zed\PurchasingControl\Business\Budget;
 
+use Generated\Shared\Transfer\BudgetCollectionRequestTransfer;
+use Generated\Shared\Transfer\BudgetCollectionResponseTransfer;
+use Generated\Shared\Transfer\BudgetConditionsTransfer;
+use Generated\Shared\Transfer\BudgetCriteriaTransfer;
 use Generated\Shared\Transfer\BudgetTransfer;
-use Generated\Shared\Transfer\CheckoutErrorTransfer;
-use Generated\Shared\Transfer\CheckoutResponseTransfer;
+use Generated\Shared\Transfer\CostCenterConditionsTransfer;
 use Generated\Shared\Transfer\CostCenterCriteriaTransfer;
-use Generated\Shared\Transfer\QuoteTransfer;
-use Spryker\Zed\QuoteApproval\Business\QuoteApprovalFacadeInterface;
-use SprykerFeature\Shared\PurchasingControl\PurchasingControlConfig;
+use Generated\Shared\Transfer\ErrorTransfer;
 use SprykerFeature\Zed\PurchasingControl\Persistence\PurchasingControlRepositoryInterface;
 
 class BudgetValidator implements BudgetValidatorInterface
 {
+    protected const string GLOSSARY_KEY_VALIDATION_ACCESS_DENIED = 'purchasing_control.budget.validation.access_denied';
+
+    protected const string GLOSSARY_KEY_VALIDATION_AMOUNT_INVALID = 'purchasing_control.budget.validation.amount_invalid';
+
+    protected const string GLOSSARY_KEY_VALIDATION_DATE_RANGE_INVALID = 'purchasing_control.budget.validation.date_range_invalid';
+
+    protected const string GLOSSARY_KEY_VALIDATION_CURRENCY_INVALID = 'purchasing_control.budget.validation.currency_invalid';
+
+    protected const string GLOSSARY_KEY_VALIDATION_CURRENCY_CHANGED = 'purchasing_control.budget.validation.currency_changed';
+
     public function __construct(
-        protected readonly PurchasingControlRepositoryInterface $costCenterRepository,
-        protected readonly QuoteApprovalFacadeInterface $quoteApprovalFacade,
+        protected readonly PurchasingControlRepositoryInterface $purchasingControlRepository,
     ) {
     }
 
-    public function validateBudgetForCheckout(QuoteTransfer $quoteTransfer, CheckoutResponseTransfer $checkoutResponseTransfer): bool
+    /**
+     * {@inheritDoc}
+     */
+    public function validateBudget(BudgetTransfer $budgetTransfer, ?int $idCompany = null): array
     {
-        if ($quoteTransfer->getIdBudget() === null) {
-            return $this->validateBudgetIsRequired($quoteTransfer, $checkoutResponseTransfer);
+        $errors = [];
+        $entityIdentifier = (string)$budgetTransfer->getIdBudget();
+
+        if ($idCompany !== null && $this->isExistingBudgetAccessDenied($budgetTransfer, $idCompany)) {
+            return [(new ErrorTransfer())
+                ->setMessage(static::GLOSSARY_KEY_VALIDATION_ACCESS_DENIED)
+                ->setEntityIdentifier($entityIdentifier)];
         }
 
-        $budgetTransfer = $this->costCenterRepository->findBudgetById($quoteTransfer->getIdBudgetOrFail());
-
-        if ($budgetTransfer === null) {
-            return $this->validateBudgetIsRequired($quoteTransfer, $checkoutResponseTransfer);
+        if ($budgetTransfer->getAmount() === null || $budgetTransfer->getAmount() <= 0) {
+            $errors[] = (new ErrorTransfer())
+                ->setMessage(static::GLOSSARY_KEY_VALIDATION_AMOUNT_INVALID)
+                ->setEntityIdentifier($entityIdentifier);
         }
 
-        // If the cost center was deactivated after budget selection, treat the stale selection as cleared
-        if (!$this->isCostCenterActiveForCustomer($budgetTransfer, $quoteTransfer)) {
-            return $this->validateBudgetIsRequired($quoteTransfer, $checkoutResponseTransfer);
+        if ($budgetTransfer->getCurrencyIsoCode() === null || strlen($budgetTransfer->getCurrencyIsoCode()) !== 3) {
+            $errors[] = (new ErrorTransfer())
+                ->setMessage(static::GLOSSARY_KEY_VALIDATION_CURRENCY_INVALID)
+                ->setEntityIdentifier($entityIdentifier);
         }
 
-        $grandTotal = $quoteTransfer->getTotals() ? ($quoteTransfer->getTotalsOrFail()->getGrandTotal() ?? 0) : 0;
-
-        if ($grandTotal <= $budgetTransfer->getRemainingAmount()) {
-            return true;
+        if ($this->isExistingBudgetCurrencyChanged($budgetTransfer)) {
+            $errors[] = (new ErrorTransfer())
+                ->setMessage(static::GLOSSARY_KEY_VALIDATION_CURRENCY_CHANGED)
+                ->setEntityIdentifier($entityIdentifier);
         }
 
-        $enforcementRule = $budgetTransfer->getEnforcementRuleOrFail();
-
-        if ($enforcementRule === PurchasingControlConfig::ENFORCEMENT_RULE_WARN) {
-            $checkoutResponseTransfer->addError(
-                (new CheckoutErrorTransfer())->setMessage('purchasing_control.validation.warn'),
-            );
-
-            return true;
+        if (
+            $budgetTransfer->getStartsAt() !== null && $budgetTransfer->getEndsAt() !== null
+            && $budgetTransfer->getStartsAt() >= $budgetTransfer->getEndsAt()
+        ) {
+            $errors[] = (new ErrorTransfer())
+                ->setMessage(static::GLOSSARY_KEY_VALIDATION_DATE_RANGE_INVALID)
+                ->setEntityIdentifier($entityIdentifier);
         }
 
-        if ($enforcementRule === PurchasingControlConfig::ENFORCEMENT_RULE_REQUIRE_APPROVAL) {
-            // Approved state: approval row exists but is no longer waiting (i.e. was approved)
-            if (
-                $this->quoteApprovalFacade->isQuoteInApprovalProcess($quoteTransfer)
-                && !$this->quoteApprovalFacade->isQuoteWaitingForApproval($quoteTransfer)
-            ) {
-                return true;
+        return $errors;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function validateBudgetCollection(
+        BudgetCollectionRequestTransfer $budgetCollectionRequestTransfer,
+        BudgetCollectionResponseTransfer $responseTransfer,
+    ): array {
+        $idCompany = $budgetCollectionRequestTransfer->getCustomer()?->getCompanyUserTransfer()?->getFkCompany();
+        $invalidIndices = [];
+
+        foreach ($budgetCollectionRequestTransfer->getBudgets() as $index => $budgetTransfer) {
+            $errorTransfers = $this->validateBudget($budgetTransfer, $idCompany);
+
+            if ($errorTransfers === []) {
+                continue;
             }
 
-            $checkoutResponseTransfer->addError(
-                (new CheckoutErrorTransfer())->setMessage('purchasing_control.validation.require-approval'),
-            );
+            $invalidIndices[(int)$index] = true;
 
+            foreach ($errorTransfers as $errorTransfer) {
+                $responseTransfer->addError($errorTransfer);
+            }
+        }
+
+        return $invalidIndices;
+    }
+
+    protected function isExistingBudgetAccessDenied(BudgetTransfer $budgetTransfer, int $idCompany): bool
+    {
+        if ($budgetTransfer->getIdCostCenter() === null) {
             return false;
         }
 
-        $checkoutResponseTransfer->addError(
-            (new CheckoutErrorTransfer())->setMessage('purchasing_control.validation.block'),
+        $costCenterCollectionTransfer = $this->purchasingControlRepository->getCostCenterCollection(
+            (new CostCenterCriteriaTransfer())->setCostCenterConditions(
+                (new CostCenterConditionsTransfer())
+                    ->addIdCostCenter($budgetTransfer->getIdCostCenterOrFail())
+                    ->addIdCompany($idCompany),
+            ),
         );
 
-        return false;
+        return $costCenterCollectionTransfer->getCostCenters()->count() === 0;
     }
 
-    protected function isCostCenterActiveForCustomer(BudgetTransfer $budgetTransfer, QuoteTransfer $quoteTransfer): bool
+    protected function isExistingBudgetCurrencyChanged(BudgetTransfer $budgetTransfer): bool
     {
-        $idCompanyBusinessUnit = $quoteTransfer->getCustomer()
-            ?->getCompanyUserTransfer()
-            ?->getFkCompanyBusinessUnit();
-
-        if ($idCompanyBusinessUnit === null) {
-            return true;
+        if ($budgetTransfer->getIdBudget() === null) {
+            return false;
         }
 
-        $currencyIsoCode = $quoteTransfer->getCurrency()?->getCode() ?? '';
-        $criteriaTransfer = (new CostCenterCriteriaTransfer())
-            ->addIdCompanyBusinessUnit($idCompanyBusinessUnit)
-            ->setIsActive(true)
-            ->setCurrencyIsoCode($currencyIsoCode);
-
-        $activeCostCenters = $this->costCenterRepository
-            ->findCostCenterCollection($criteriaTransfer)
-            ->getCostCenters();
-
-        foreach ($activeCostCenters as $costCenter) {
-            if ($costCenter->getIdCostCenter() === $budgetTransfer->getIdCostCenter()) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    protected function validateBudgetIsRequired(QuoteTransfer $quoteTransfer, CheckoutResponseTransfer $checkoutResponseTransfer): bool
-    {
-        $idCompanyBusinessUnit = $quoteTransfer->getCustomer()
-            ?->getCompanyUserTransfer()
-            ?->getFkCompanyBusinessUnit();
-
-        if ($idCompanyBusinessUnit === null) {
-            return true;
-        }
-
-        $currencyIsoCode = $quoteTransfer->getCurrency()?->getCode() ?? '';
-        $criteriaTransfer = (new CostCenterCriteriaTransfer())
-            ->addIdCompanyBusinessUnit($idCompanyBusinessUnit)
-            ->setIsActive(true)
-            ->setCurrencyIsoCode($currencyIsoCode);
-
-        $hasCostCenters = $this->costCenterRepository
-            ->findCostCenterCollection($criteriaTransfer)
-            ->getCostCenters()
-            ->count() > 0;
-
-        if (!$hasCostCenters) {
-            return true;
-        }
-
-        $checkoutResponseTransfer->addError(
-            (new CheckoutErrorTransfer())->setMessage('purchasing_control.validation.required'),
+        $budgetCollectionTransfer = $this->purchasingControlRepository->getBudgetCollection(
+            (new BudgetCriteriaTransfer())->setBudgetConditions(
+                (new BudgetConditionsTransfer())->addIdBudget($budgetTransfer->getIdBudgetOrFail()),
+            ),
         );
+        $existingBudgetTransfer = $budgetCollectionTransfer->getBudgets()->getIterator()->current() ?: null;
 
-        return false;
+        if ($existingBudgetTransfer === null) {
+            return false;
+        }
+
+        return $existingBudgetTransfer->getCurrencyIsoCode() !== $budgetTransfer->getCurrencyIsoCode();
     }
 }

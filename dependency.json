@@ -1,0 +1,6 @@
+{
+    "include": {
+        "spryker/transfer": "Provides transfer objects definition with strict types and `::get*OrFail()` functionality.",
+        "spryker-shop/shop-ui": "Provides the basic template for the purchasing control user interface."
+    }
+}

@@ -8,11 +8,9 @@
 namespace SprykerFeature\Zed\PurchasingControl\Business\Budget;
 
 use Generated\Shared\Transfer\BudgetCollectionTransfer;
-use Generated\Shared\Transfer\BudgetTransfer;
+use Generated\Shared\Transfer\BudgetCriteriaTransfer;
 
 interface BudgetReaderInterface
 {
-    public function getActiveBudgetsForCostCenter(int $idCostCenter, string $currencyIsoCode): BudgetCollectionTransfer;
-
-    public function getBudgetById(int $idBudget): BudgetTransfer;
+    public function getBudgetCollection(BudgetCriteriaTransfer $budgetCriteriaTransfer): BudgetCollectionTransfer;
 }

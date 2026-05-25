@@ -7,8 +7,11 @@
 
 namespace SprykerFeature\Zed\PurchasingControl\Communication\Controller;
 
+use Generated\Shared\Transfer\CostCenterCollectionRequestTransfer;
+use Generated\Shared\Transfer\CostCenterConditionsTransfer;
+use Generated\Shared\Transfer\CostCenterCriteriaTransfer;
 use Generated\Shared\Transfer\CostCenterTransfer;
-use Spryker\Zed\Kernel\Communication\Controller\AbstractController;
+use SprykerFeature\Zed\PurchasingControl\Communication\Form\CostCenterForm;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -17,21 +20,27 @@ use Symfony\Component\HttpFoundation\Request;
  * @method \SprykerFeature\Zed\PurchasingControl\Communication\PurchasingControlCommunicationFactory getFactory()
  * @method \SprykerFeature\Zed\PurchasingControl\Business\PurchasingControlFacadeInterface getFacade()
  */
-class CostCenterController extends AbstractController
+class CostCenterController extends AbstractPurchasingControlController
 {
-    public const PARAM_ID_COST_CENTER = 'id-cost-center';
+    public const string PARAM_ID_COST_CENTER = 'id-cost-center';
 
     /**
      * @uses \SprykerFeature\Zed\PurchasingControl\Communication\Controller\CostCenterController::indexAction()
      *
      * @var string
      */
-    protected const URL_COST_CENTER_LIST = '/purchasing-control/cost-center/index';
+    protected const string URL_COST_CENTER_LIST = '/purchasing-control/cost-center/index';
+
+    protected const string MESSAGE_COST_CENTER_CREATED = 'Cost center created successfully.';
+
+    protected const string MESSAGE_COST_CENTER_UPDATED = 'Cost center updated successfully.';
+
+    protected const string MESSAGE_COST_CENTER_NOT_FOUND = 'Cost center not found.';
 
     /**
      * @return array<string, mixed>
      */
-    public function indexAction(Request $request): array
+    public function indexAction(): array
     {
         $costCenterTable = $this->getFactory()->createCostCenterTable();
 
@@ -40,7 +49,7 @@ class CostCenterController extends AbstractController
         ]);
     }
 
-    public function tableAction(Request $request): JsonResponse
+    public function tableAction(): JsonResponse
     {
         $costCenterTable = $this->getFactory()->createCostCenterTable();
 
@@ -52,27 +61,39 @@ class CostCenterController extends AbstractController
      */
     public function createAction(Request $request): RedirectResponse|array
     {
-        $costCenterForm = $this->getFactory()->createCostCenterForm();
-        $costCenterForm->handleRequest($request);
+        $formOptions = $this->getFactory()->createCostCenterFormDataProvider()->getOptions();
 
-        if ($costCenterForm->isSubmitted() && $costCenterForm->isValid()) {
-            $costCenterTransfer = (new CostCenterTransfer())->fromArray($costCenterForm->getData(), true);
-            $costCenterResponseTransfer = $this->getFacade()->createCostCenter($costCenterTransfer);
-
-            if ($costCenterResponseTransfer->getIsSuccessful()) {
-                $this->addSuccessMessage('Cost center created successfully.');
-
-                return $this->redirectResponse(static::URL_COST_CENTER_LIST);
-            }
-
-            foreach ($costCenterResponseTransfer->getErrors() as $error) {
-                $this->addErrorMessage($error->getValueOrFail());
-            }
+        if ($request->get(CostCenterForm::FORM_NAME)) {
+            $formOptions = $this->getFactory()->createCostCenterFormDataProvider()->expandOptionsWithSubmittedData(
+                $formOptions,
+                $request->get(CostCenterForm::FORM_NAME),
+            );
         }
 
-        return $this->viewResponse([
-            'costCenterForm' => $costCenterForm->createView(),
-        ]);
+        $costCenterForm = $this->getFactory()->createCostCenterForm(new CostCenterTransfer(), $formOptions);
+        $costCenterForm->handleRequest($request);
+
+        if (!$costCenterForm->isSubmitted() || !$costCenterForm->isValid()) {
+            return $this->viewResponse([
+                'costCenterForm' => $costCenterForm->createView(),
+            ]);
+        }
+
+        $costCenterCollectionResponseTransfer = $this->getFacade()->createCostCenterCollection(
+            (new CostCenterCollectionRequestTransfer())->addCostCenter($costCenterForm->getData()),
+        );
+
+        if ($costCenterCollectionResponseTransfer->getErrors()->count() > 0) {
+            $this->addTranslatedErrorMessages($costCenterCollectionResponseTransfer->getErrors());
+
+            return $this->viewResponse([
+                'costCenterForm' => $costCenterForm->createView(),
+            ]);
+        }
+
+        $this->addSuccessMessage(static::MESSAGE_COST_CENTER_CREATED);
+
+        return $this->redirectResponse(static::URL_COST_CENTER_LIST);
     }
 
     /**
@@ -81,37 +102,57 @@ class CostCenterController extends AbstractController
     public function editAction(Request $request): RedirectResponse|array
     {
         $idCostCenter = $this->castId($request->query->get(static::PARAM_ID_COST_CENTER));
-        $existingCostCenter = $this->getFacade()->getCostCenterById($idCostCenter);
 
-        if ($existingCostCenter->getIdCostCenter() === null) {
-            $this->addErrorMessage('Cost center not found.');
+        $costCenterCollectionTransfer = $this->getFacade()->getCostCenterCollection(
+            (new CostCenterCriteriaTransfer())->setCostCenterConditions(
+                (new CostCenterConditionsTransfer())->addIdCostCenter($idCostCenter),
+            ),
+        );
+
+        if ($costCenterCollectionTransfer->getCostCenters()->count() === 0) {
+            $this->addErrorMessage(static::MESSAGE_COST_CENTER_NOT_FOUND);
 
             return $this->redirectResponse(static::URL_COST_CENTER_LIST);
         }
 
-        $costCenterForm = $this->getFactory()->createCostCenterForm($existingCostCenter->toArray(true, true));
-        $costCenterForm->handleRequest($request);
+        $existingCostCenterTransfer = $costCenterCollectionTransfer->getCostCenters()->getIterator()->current();
 
-        if ($costCenterForm->isSubmitted() && $costCenterForm->isValid()) {
-            $costCenterTransfer = (new CostCenterTransfer())->fromArray($costCenterForm->getData(), true);
-            $costCenterTransfer->setIdCostCenter($idCostCenter);
-
-            $costCenterResponseTransfer = $this->getFacade()->updateCostCenter($costCenterTransfer);
-
-            if ($costCenterResponseTransfer->getIsSuccessful()) {
-                $this->addSuccessMessage('Cost center updated successfully.');
-
-                return $this->redirectResponse(static::URL_COST_CENTER_LIST);
-            }
-
-            foreach ($costCenterResponseTransfer->getErrors() as $error) {
-                $this->addErrorMessage($error->getValueOrFail());
-            }
+        $formOptions = $this->getFactory()->createCostCenterFormDataProvider()->getOptions($existingCostCenterTransfer);
+        if ($request->get(CostCenterForm::FORM_NAME)) {
+            $formOptions = $this->getFactory()->createCostCenterFormDataProvider()->expandOptionsWithSubmittedData(
+                $formOptions,
+                $request->get(CostCenterForm::FORM_NAME),
+            );
         }
 
-        return $this->viewResponse([
-            'costCenterForm' => $costCenterForm->createView(),
-            'idCostCenter' => $idCostCenter,
-        ]);
+        $costCenterForm = $this->getFactory()->createCostCenterForm($existingCostCenterTransfer, $formOptions);
+        $costCenterForm->handleRequest($request);
+
+        if (!$costCenterForm->isSubmitted() || !$costCenterForm->isValid()) {
+            return $this->viewResponse([
+                'costCenterForm' => $costCenterForm->createView(),
+                'idCostCenter' => $idCostCenter,
+            ]);
+        }
+
+        $costCenterTransfer = $costCenterForm->getData();
+        $costCenterTransfer->setIdCostCenter($idCostCenter);
+
+        $costCenterCollectionResponseTransfer = $this->getFacade()->updateCostCenterCollection(
+            (new CostCenterCollectionRequestTransfer())->addCostCenter($costCenterTransfer),
+        );
+
+        if ($costCenterCollectionResponseTransfer->getErrors()->count() > 0) {
+            $this->addTranslatedErrorMessages($costCenterCollectionResponseTransfer->getErrors());
+
+            return $this->viewResponse([
+                'costCenterForm' => $costCenterForm->createView(),
+                'idCostCenter' => $idCostCenter,
+            ]);
+        }
+
+        $this->addSuccessMessage(static::MESSAGE_COST_CENTER_UPDATED);
+
+        return $this->redirectResponse(static::URL_COST_CENTER_LIST);
     }
 }

@@ -7,10 +7,16 @@
 
 namespace SprykerFeature\Client\PurchasingControl;
 
+use Generated\Shared\Transfer\BudgetCollectionRequestTransfer;
+use Generated\Shared\Transfer\BudgetCollectionResponseTransfer;
 use Generated\Shared\Transfer\BudgetCollectionTransfer;
 use Generated\Shared\Transfer\BudgetCriteriaTransfer;
+use Generated\Shared\Transfer\CostCenterCollectionRequestTransfer;
+use Generated\Shared\Transfer\CostCenterCollectionResponseTransfer;
 use Generated\Shared\Transfer\CostCenterCollectionTransfer;
 use Generated\Shared\Transfer\CostCenterCriteriaTransfer;
+use Generated\Shared\Transfer\CostCenterQuoteUpdateRequestTransfer;
+use Generated\Shared\Transfer\CostCenterQuoteUpdateResponseTransfer;
 use Spryker\Client\Kernel\AbstractClient;
 
 /**
@@ -23,16 +29,11 @@ class PurchasingControlClient extends AbstractClient implements PurchasingContro
      *
      * @api
      */
-    public function getActiveCostCentersForCompanyBusinessUnit(int $idCompanyBusinessUnit, string $currencyIsoCode): CostCenterCollectionTransfer
+    public function getCostCenterCollection(CostCenterCriteriaTransfer $costCenterCriteriaTransfer): CostCenterCollectionTransfer
     {
-        $criteriaTransfer = (new CostCenterCriteriaTransfer())
-            ->addIdCompanyBusinessUnit($idCompanyBusinessUnit)
-            ->setIsActive(true)
-            ->setCurrencyIsoCode($currencyIsoCode);
-
         return $this->getFactory()
             ->createPurchasingControlStub()
-            ->getActiveCostCentersForCompanyBusinessUnit($criteriaTransfer);
+            ->getCostCenterCollection($costCenterCriteriaTransfer);
     }
 
     /**
@@ -40,16 +41,70 @@ class PurchasingControlClient extends AbstractClient implements PurchasingContro
      *
      * @api
      */
-    public function getActiveBudgetsForCostCenter(int $idCostCenter, string $currencyIsoCode): BudgetCollectionTransfer
+    public function getBudgetCollection(BudgetCriteriaTransfer $budgetCriteriaTransfer): BudgetCollectionTransfer
     {
-        $criteriaTransfer = (new BudgetCriteriaTransfer())
-            ->setIdCostCenter($idCostCenter)
-            ->setCurrencyIsoCode($currencyIsoCode)
-            ->setIsActive(true)
-            ->setActiveOnDate(date('Y-m-d'));
-
         return $this->getFactory()
             ->createPurchasingControlStub()
-            ->getActiveBudgetsForCostCenter($criteriaTransfer);
+            ->getBudgetCollection($budgetCriteriaTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function createCostCenterCollection(CostCenterCollectionRequestTransfer $costCenterCollectionRequestTransfer): CostCenterCollectionResponseTransfer
+    {
+        return $this->getFactory()
+            ->createPurchasingControlStub()
+            ->createCostCenterCollection($costCenterCollectionRequestTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function updateCostCenterCollection(CostCenterCollectionRequestTransfer $costCenterCollectionRequestTransfer): CostCenterCollectionResponseTransfer
+    {
+        return $this->getFactory()
+            ->createPurchasingControlStub()
+            ->updateCostCenterCollection($costCenterCollectionRequestTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function updateQuoteCostCenter(CostCenterQuoteUpdateRequestTransfer $requestTransfer): CostCenterQuoteUpdateResponseTransfer
+    {
+        return $this->getFactory()
+            ->createPurchasingControlStub()
+            ->updateQuoteCostCenter($requestTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function createBudgetCollection(BudgetCollectionRequestTransfer $budgetCollectionRequestTransfer): BudgetCollectionResponseTransfer
+    {
+        return $this->getFactory()
+            ->createPurchasingControlStub()
+            ->createBudgetCollection($budgetCollectionRequestTransfer);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
+    public function updateBudgetCollection(BudgetCollectionRequestTransfer $budgetCollectionRequestTransfer): BudgetCollectionResponseTransfer
+    {
+        return $this->getFactory()
+            ->createPurchasingControlStub()
+            ->updateBudgetCollection($budgetCollectionRequestTransfer);
     }
 }

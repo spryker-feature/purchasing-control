@@ -1,0 +1,118 @@
+{% extends template('page-layout-company', 'CompanyPage') %}
+
+{% define data = {
+    costCenters: _view.costCenters,
+    pagination: _view.pagination,
+    searchForm: _view.searchForm,
+    title: 'purchasing_control.cost_center.list.title' | trans,
+    activePage: 'cost-center',
+    currentBreadcrumb: 'purchasing_control.cost_center.list.title',
+} %}
+
+{% set jsPrefix = 'js-cost-center-' %}
+{% set formClass = 'js-cost-center-search-form' %}
+
+{% block companyContent %}
+    {% set searchForm = data.searchForm %}
+
+    <div class="box">
+        {% block costCenterHeader %}
+            {% if can('ManageCostCentersPermissionPlugin') %}
+                <div class="grid grid--right">
+                    <div class="col">
+                        {% block costCenterHeaderActions %}
+                            <a href="{{ url('company/cost-center/create') }}" class="button button--success">
+                                {{ 'purchasing_control.cost_center.create.title' | trans }}
+                            </a>
+                        {% endblock %}
+                    </div>
+                </div>
+            {% endif %}
+        {% endblock %}
+
+        {% block formStart %}
+            {{ form_start(searchForm, {
+                attr: {
+                    class: formClass,
+                },
+            }) }}
+        {% endblock %}
+
+        {% block filtersSection %}
+            {% set filters = searchForm.filters.children
+                | map(filter => {
+                    row: filter,
+                    class: 'col--md-6 col--lg-4',
+                    attr: { class: jsPrefix ~ filter.vars.name ~ '-target' },
+                })
+            %}
+
+            {% include molecule('form-filters') with {
+                data: {
+                    filters: filters,
+                },
+            } only %}
+        {% endblock %}
+
+        {% block activeFilters %}
+            {% include molecule('form-active-filters') with {
+                class: 'spacing-bottom spacing-bottom--big',
+                data: {
+                    form: searchForm,
+                    jsPrefix: jsPrefix,
+                    formClass: formClass,
+                },
+            } only %}
+        {% endblock %}
+
+        {% block costCenterList %}
+            {% set columns = [
+                { id: 'spy_cost_center.name', title: 'purchasing_control.cost_center.form.name', sortable: true },
+                { id: 'businessUnits', title: 'purchasing_control.cost_center.form.business_unit' },
+                { id: 'spy_cost_center.is_active', title: 'purchasing_control.cost_center.list.status', sortable: true },
+                { id: 'actions', title: 'purchasing_control.cost_center.list.actions', type: 'actions' },
+            ] %}
+
+            {% set rows = data.costCenters | map(costCenter => {
+                'spy_cost_center.name': costCenter.name,
+                businessUnits: costCenter.companyBusinessUnits | length > 3
+                    ? costCenter.companyBusinessUnits | slice(0, 3) | map(bu => bu.name) | join(', ') ~ ' <span title="' ~ (costCenter.companyBusinessUnits | slice(3) | map(bu => bu.name) | join(', ')) ~ '">+' ~ (costCenter.companyBusinessUnits | length - 3) ~ ' ' ~ ('purchasing_control.cost_center.business_units.more' | trans) ~ '</span>'
+                    : costCenter.companyBusinessUnits | map(bu => bu.name) | join(', '),
+                'spy_cost_center.is_active': costCenter.isActive
+                    ? '<span class="label label--success">' ~ ('purchasing_control.cost_center.status.active' | trans) ~ '</span>'
+                    : '<span class="label label--danger">' ~ ('purchasing_control.cost_center.status.inactive' | trans) ~ '</span>',
+                actions: [{
+                    url:url('company/cost-center/update', { costCenterUuid: costCenter.uuid }),
+                    label: 'purchasing_control.cost_center.action.edit',
+                    qa: 'cost-center-edit-button',
+                },
+                {
+                    url:url('company/cost-center/budget', { costCenterUuid: costCenter.uuid }),
+                    label: 'purchasing_control.cost_center.action.budgets',
+                    qa: 'cost-center-budgets-button',
+                }],
+            }) %}
+
+            {% include molecule('advanced-table') with {
+                data: {
+                    columns: columns,
+                    rows: rows,
+                    emptyText: 'purchasing_control.cost_center.list.empty',
+                    sortableForm: searchForm,
+                    sortableFormClass: formClass,
+                    pagination: {
+                        parameters: app.request.query.all,
+                        currentPage: data.pagination.page,
+                        paginationPath: 'company/cost-center',
+                        maxPage: data.pagination.lastPage,
+                        showAlwaysFirstAndLast: true,
+                    },
+                },
+            } only %}
+        {% endblock %}
+
+        {% block formEnd %}
+            {{ form_end(searchForm) }}
+        {% endblock %}
+    </div>
+{% endblock %}

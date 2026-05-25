@@ -15,26 +15,9 @@
 {% block content %}
     {% embed '@Gui/Partials/widget.twig' with { widget_title: 'Edit Cost Center' | trans } %}
         {% block widget_content %}
-            {{ form_start(costCenterForm) }}
-            {{ form_errors(costCenterForm) }}
-
-            <div class="row">
-                <div class="col-sm-6">
-                    {{ form_row(costCenterForm.name) }}
-                    {{ form_row(costCenterForm.companyBusinessUnitIds) }}
-                    {{ form_row(costCenterForm.isActive) }}
-                </div>
-                <div class="col-sm-6">
-                    {{ form_row(costCenterForm.description) }}
-                </div>
-            </div>
-
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">{{ 'Save' | trans }}</button>
-                <a href="{{ url('/purchasing-control/cost-center/index') }}" class="btn btn-default">{{ 'Cancel' | trans }}</a>
-            </div>
-
-            {{ form_end(costCenterForm) }}
+            {% include '@PurchasingControl/Partials/_cost-center-form.twig' with {
+                form: costCenterForm,
+            } only %}
         {% endblock %}
     {% endembed %}
 {% endblock %}

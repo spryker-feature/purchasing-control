@@ -1,0 +1,10 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'order-history-table-cost-center-header',
+} %}
+
+{% block body %}
+    <th>{{ 'purchasing_control.order.table.cost_center' | trans }}</th>
+    <th>{{ 'purchasing_control.order.table.budget' | trans }}</th>
+{% endblock %}

@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <config>
     <purchasing-control>
-        <label>Purchasing Control</label>
-        <title>Purchasing Control</title>
+        <label>Cost Centers</label>
+        <title>Cost Centers</title>
         <icon>fa-building</icon>
         <bundle>purchasing-control</bundle>
         <controller>cost-center</controller>
@@ -31,6 +31,24 @@
                 <controller>budget</controller>
                 <action>index</action>
                 <visible>0</visible>
+                <pages>
+                    <budget-create>
+                        <label>Create Budget</label>
+                        <title>Create Budget</title>
+                        <bundle>purchasing-control</bundle>
+                        <controller>budget</controller>
+                        <action>create</action>
+                        <visible>0</visible>
+                    </budget-create>
+                    <budget-edit>
+                        <label>Edit Budget</label>
+                        <title>Edit Budget</title>
+                        <bundle>purchasing-control</bundle>
+                        <controller>budget</controller>
+                        <action>edit</action>
+                        <visible>0</visible>
+                    </budget-edit>
+                </pages>
             </cost-center-budget>
         </pages>
     </purchasing-control>

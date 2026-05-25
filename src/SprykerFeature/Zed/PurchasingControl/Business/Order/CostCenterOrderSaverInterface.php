@@ -12,10 +12,5 @@ use Generated\Shared\Transfer\SaveOrderTransfer;
 
 interface CostCenterOrderSaverInterface
 {
-    /**
-     * Specification:
-     * - Copies fk_cost_center and fk_budget from the quote to the sales order.
-     * - Does nothing when no cost center is selected on the quote.
-     */
     public function saveCostCenterToOrder(QuoteTransfer $quoteTransfer, SaveOrderTransfer $saveOrderTransfer): void;
 }

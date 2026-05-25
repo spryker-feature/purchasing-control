@@ -41,10 +41,20 @@ interface PurchasingControlEntityManagerInterface
     /**
      * @api
      */
+    public function updateBudgetConsumption(BudgetConsumptionTransfer $budgetConsumptionTransfer): BudgetConsumptionTransfer;
+
+    /**
+     * @api
+     */
     public function deleteBudgetConsumptionByIdSalesOrder(int $idSalesOrder): void;
 
     /**
      * @api
      */
     public function updateSalesOrderCostCenter(int $idSalesOrder, int $idCostCenter, ?int $idBudget): void;
+
+    /**
+     * @api
+     */
+    public function deactivateBudgetsByCostCenterId(int $idCostCenter): void;
 }

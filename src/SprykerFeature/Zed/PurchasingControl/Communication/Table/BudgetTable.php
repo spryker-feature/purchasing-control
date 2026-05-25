@@ -7,10 +7,14 @@
 
 namespace SprykerFeature\Zed\PurchasingControl\Communication\Table;
 
+use Orm\Zed\PurchasingControl\Persistence\Map\SpyBudgetConsumptionTableMap;
 use Orm\Zed\PurchasingControl\Persistence\Map\SpyBudgetTableMap;
 use Orm\Zed\PurchasingControl\Persistence\SpyBudgetQuery;
+use Spryker\Service\UtilDateTime\UtilDateTimeServiceInterface;
+use Spryker\Service\UtilText\Model\Url\Url;
 use Spryker\Zed\Gui\Communication\Table\AbstractTable;
 use Spryker\Zed\Gui\Communication\Table\TableConfiguration;
+use Spryker\Zed\Money\Business\MoneyFacadeInterface;
 use SprykerFeature\Shared\PurchasingControl\PurchasingControlConfig;
 
 class BudgetTable extends AbstractTable
@@ -20,51 +24,62 @@ class BudgetTable extends AbstractTable
      *
      * @var string
      */
-    protected const BASE_URL = '/purchasing-control/budget';
+    protected const string BASE_URL = '/purchasing-control/budget';
 
-    protected const COL_ACTIONS = 'actions';
+    protected const string COL_ACTIONS = 'actions';
 
-    protected const COL_PERIOD = 'period';
+    protected const string COL_PERIOD = 'period';
 
-    protected const COL_STATUS = 'status';
+    protected const string COL_STATUS = 'status';
 
-    protected const COL_RULE = 'rule';
+    protected const string COL_RULE = 'rule';
 
-    protected const COL_REMAINING_AMOUNT = 'remaining_amount';
+    protected const string COL_REMAINING_AMOUNT = 'remaining_amount';
 
-    protected const LABEL_ACTIVE = '<span class="badge badge-soft-success">Active</span>';
+    protected const string COL_CONSUMED_AMOUNT = 'ConsumedAmount';
 
-    protected const LABEL_INACTIVE = '<span class="badge badge-soft-secondary">Inactive</span>';
+    protected const string LABEL_ACTIVE = 'Active';
 
-    protected const PARAM_ID_COST_CENTER = 'id-cost-center';
+    protected const string LABEL_INACTIVE = 'Deactivated';
 
-    protected const PARAM_ID_BUDGET = 'id-budget';
+    protected const string LABEL_CLASS_ACTIVE = 'label-success';
 
-    protected const BUTTON_EDIT = 'Edit';
+    protected const string LABEL_CLASS_INACTIVE = 'label-danger';
 
-    protected const URL_BUDGET_EDIT = '/purchasing-control/budget/edit';
+    protected const string LABEL_CLASS_RULE_BLOCK = 'label-danger';
+
+    protected const string LABEL_CLASS_RULE_WARN = 'label-warning';
+
+    protected const string LABEL_CLASS_RULE_DEFAULT = 'label-info';
+
+    protected const string LABEL_RULE_BLOCK = 'Block Order';
+
+    protected const string LABEL_RULE_WARN = 'Display Warning';
+
+    protected const string PARAM_ID_COST_CENTER = 'id-cost-center';
+
+    protected const string PARAM_ID_BUDGET = 'id-budget';
+
+    protected const string BUTTON_EDIT = 'Edit';
+
+    /**
+     * @uses \SprykerFeature\Zed\PurchasingControl\Communication\Controller\BudgetController::editAction()
+     */
+    protected const string URL_BUDGET_EDIT = '/purchasing-control/budget/edit';
 
     public function __construct(
         protected SpyBudgetQuery $budgetQuery,
         protected int $idCostCenter,
+        protected MoneyFacadeInterface $moneyFacade,
+        protected UtilDateTimeServiceInterface $utilDateTimeService,
     ) {
         $this->baseUrl = static::BASE_URL;
     }
 
     protected function configure(TableConfiguration $config): TableConfiguration
     {
-        $config->setUrl(sprintf('table?%s=%d', static::PARAM_ID_COST_CENTER, $this->idCostCenter));
-
-        $config->setHeader([
-            SpyBudgetTableMap::COL_ID_BUDGET => 'ID',
-            SpyBudgetTableMap::COL_NAME => 'Name',
-            SpyBudgetTableMap::COL_AMOUNT => 'Amount',
-            static::COL_REMAINING_AMOUNT => 'Remaining Amount',
-            static::COL_PERIOD => 'Period',
-            static::COL_RULE => 'Rule',
-            static::COL_STATUS => 'Status',
-            static::COL_ACTIONS => 'Actions',
-        ]);
+        $config->setUrl($this->buildTableUrl());
+        $config->setHeader($this->getTableHeaders());
 
         $config->setSearchable([
             SpyBudgetTableMap::COL_NAME,
@@ -88,12 +103,40 @@ class BudgetTable extends AbstractTable
         return $config;
     }
 
+    protected function buildTableUrl(): string
+    {
+        return Url::generate('/table', [static::PARAM_ID_COST_CENTER => $this->idCostCenter])->build();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function getTableHeaders(): array
+    {
+        return [
+            SpyBudgetTableMap::COL_ID_BUDGET => 'ID',
+            SpyBudgetTableMap::COL_NAME => 'Name',
+            SpyBudgetTableMap::COL_AMOUNT => 'Amount',
+            static::COL_REMAINING_AMOUNT => 'Remaining Amount',
+            static::COL_PERIOD => 'Period',
+            static::COL_RULE => 'Rule',
+            static::COL_STATUS => 'Status',
+            static::COL_ACTIONS => 'Actions',
+        ];
+    }
+
     protected function prepareQuery(): SpyBudgetQuery
     {
         $this->budgetQuery
             ->leftJoinSpyBudgetConsumption()
-            ->withColumn('COALESCE(SUM(spy_budget_consumption.amount), 0)', 'ConsumedAmount')
-            ->withColumn('spy_budget.amount - COALESCE(SUM(spy_budget_consumption.amount), 0)', static::COL_REMAINING_AMOUNT)
+            ->withColumn(
+                sprintf('COALESCE(SUM(%s), 0)', SpyBudgetConsumptionTableMap::COL_AMOUNT),
+                static::COL_CONSUMED_AMOUNT,
+            )
+            ->withColumn(
+                sprintf('%s - COALESCE(SUM(%s), 0)', SpyBudgetTableMap::COL_AMOUNT, SpyBudgetConsumptionTableMap::COL_AMOUNT),
+                static::COL_REMAINING_AMOUNT,
+            )
             ->groupByIdBudget()
             ->filterByFkCostCenter($this->idCostCenter);
 
@@ -129,61 +172,54 @@ class BudgetTable extends AbstractTable
         return [
             SpyBudgetTableMap::COL_ID_BUDGET => $idBudget,
             SpyBudgetTableMap::COL_NAME => $item[SpyBudgetTableMap::COL_NAME],
-            SpyBudgetTableMap::COL_AMOUNT => sprintf(
-                '%d %s',
-                $item[SpyBudgetTableMap::COL_AMOUNT] / 100,
+            SpyBudgetTableMap::COL_AMOUNT => $this->formatMoney(
+                (int)$item[SpyBudgetTableMap::COL_AMOUNT],
                 $item[SpyBudgetTableMap::COL_CURRENCY_ISO_CODE],
             ),
-            static::COL_REMAINING_AMOUNT => sprintf(
-                '%d %s',
-                $item[static::COL_REMAINING_AMOUNT] / 100,
+            static::COL_REMAINING_AMOUNT => $this->formatMoney(
+                (int)$item[static::COL_REMAINING_AMOUNT],
                 $item[SpyBudgetTableMap::COL_CURRENCY_ISO_CODE],
             ),
             static::COL_PERIOD => sprintf(
                 '%s – %s',
-                $item[SpyBudgetTableMap::COL_STARTS_AT],
-                $item[SpyBudgetTableMap::COL_ENDS_AT],
+                $this->utilDateTimeService->formatDate($item[SpyBudgetTableMap::COL_STARTS_AT]),
+                $this->utilDateTimeService->formatDate($item[SpyBudgetTableMap::COL_ENDS_AT]),
             ),
             static::COL_RULE => $this->getRuleLabel($item[SpyBudgetTableMap::COL_ENFORCEMENT_RULE]),
             static::COL_STATUS => $item[SpyBudgetTableMap::COL_IS_ACTIVE]
-                ? static::LABEL_ACTIVE
-                : static::LABEL_INACTIVE,
+                ? $this->generateLabel(static::LABEL_ACTIVE, static::LABEL_CLASS_ACTIVE)
+                : $this->generateLabel(static::LABEL_INACTIVE, static::LABEL_CLASS_INACTIVE),
             static::COL_ACTIONS => $this->buildActions($idBudget),
         ];
     }
 
     protected function getRuleLabel(string $rule): string
     {
-        $labelClass = 'badge-soft-info';
-
         if ($rule === PurchasingControlConfig::ENFORCEMENT_RULE_BLOCK) {
-            $labelClass = 'badge-soft-danger';
+            return $this->generateLabel(static::LABEL_RULE_BLOCK, static::LABEL_CLASS_RULE_BLOCK);
         }
 
         if ($rule === PurchasingControlConfig::ENFORCEMENT_RULE_WARN) {
-            $labelClass = 'badge-soft-warning';
+            return $this->generateLabel(static::LABEL_RULE_WARN, static::LABEL_CLASS_RULE_WARN);
         }
 
-        return sprintf(
-            '<span class="badge %s">%s</span>',
-            $labelClass,
-            str_replace('_', ' ', ucfirst($rule)),
+        return $this->generateLabel(str_replace('_', ' ', ucfirst($rule)), static::LABEL_CLASS_RULE_DEFAULT);
+    }
+
+    protected function formatMoney(int $amount, string $currencyIsoCode): string
+    {
+        return $this->moneyFacade->formatWithSymbol(
+            $this->moneyFacade->fromInteger($amount, $currencyIsoCode),
         );
     }
 
     protected function buildActions(int $idBudget): string
     {
-        $editUrl = $this->buildUrl(
-            static::URL_BUDGET_EDIT . '?' . http_build_query([
-                static::PARAM_ID_COST_CENTER => $this->idCostCenter,
-                static::PARAM_ID_BUDGET => $idBudget,
-            ]),
-        );
+        $editUrl = Url::generate(static::URL_BUDGET_EDIT, [
+            static::PARAM_ID_COST_CENTER => $this->idCostCenter,
+            static::PARAM_ID_BUDGET => $idBudget,
+        ]);
 
-        return sprintf(
-            '<a href="%s" class="btn btn-xs btn-primary">%s</a>',
-            $editUrl,
-            static::BUTTON_EDIT,
-        );
+        return $this->generateEditButton($editUrl, static::BUTTON_EDIT);
     }
 }

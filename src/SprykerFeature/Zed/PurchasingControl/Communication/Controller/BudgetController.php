@@ -7,9 +7,10 @@
 
 namespace SprykerFeature\Zed\PurchasingControl\Communication\Controller;
 
+use Generated\Shared\Transfer\BudgetCollectionRequestTransfer;
+use Generated\Shared\Transfer\BudgetConditionsTransfer;
+use Generated\Shared\Transfer\BudgetCriteriaTransfer;
 use Generated\Shared\Transfer\BudgetTransfer;
-use Spryker\Zed\Kernel\Communication\Controller\AbstractController;
-use SprykerFeature\Zed\PurchasingControl\Communication\Form\BudgetForm;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -18,18 +19,24 @@ use Symfony\Component\HttpFoundation\Request;
  * @method \SprykerFeature\Zed\PurchasingControl\Communication\PurchasingControlCommunicationFactory getFactory()
  * @method \SprykerFeature\Zed\PurchasingControl\Business\PurchasingControlFacadeInterface getFacade()
  */
-class BudgetController extends AbstractController
+class BudgetController extends AbstractPurchasingControlController
 {
-    public const PARAM_ID_COST_CENTER = 'id-cost-center';
+    public const string PARAM_ID_COST_CENTER = 'id-cost-center';
 
-    public const PARAM_ID_BUDGET = 'id-budget';
+    public const string PARAM_ID_BUDGET = 'id-budget';
 
     /**
      * @uses \SprykerFeature\Zed\PurchasingControl\Communication\Controller\BudgetController::indexAction()
      *
      * @var string
      */
-    protected const URL_BUDGET_LIST = '/purchasing-control/budget/index';
+    protected const string URL_BUDGET_LIST = '/purchasing-control/budget/index';
+
+    protected const string MESSAGE_BUDGET_CREATED = 'Budget created successfully.';
+
+    protected const string MESSAGE_BUDGET_UPDATED = 'Budget updated successfully.';
+
+    protected const string MESSAGE_BUDGET_NOT_FOUND = 'Budget not found.';
 
     /**
      * @return array<string, mixed>
@@ -37,13 +44,11 @@ class BudgetController extends AbstractController
     public function indexAction(Request $request): array
     {
         $idCostCenter = $this->castId($request->query->get(static::PARAM_ID_COST_CENTER));
-        $budgetTable = $this->getFactory()->createBudgetTable($idCostCenter);
-        $costCenter = $this->getFacade()->getCostCenterById($idCostCenter);
 
         return $this->viewResponse([
-            'budgetTable' => $budgetTable->render(),
+            'budgetTable' => $this->getFactory()->createBudgetTable($idCostCenter)->render(),
             'idCostCenter' => $idCostCenter,
-            'costCenterName' => $costCenter->getName() ?? sprintf('#%d', $idCostCenter),
+            'costCenterName' => $this->getFactory()->createCostCenterReader()->findCostCenterName($idCostCenter),
         ]);
     }
 
@@ -61,38 +66,41 @@ class BudgetController extends AbstractController
     public function createAction(Request $request): RedirectResponse|array
     {
         $idCostCenter = $this->castId($request->query->get(static::PARAM_ID_COST_CENTER));
-        $costCenter = $this->getFacade()->getCostCenterById($idCostCenter);
+        $costCenterName = $this->getFactory()->createCostCenterReader()->findCostCenterName($idCostCenter);
 
         $budgetForm = $this->getFactory()->createBudgetForm();
         $budgetForm->handleRequest($request);
 
-        if ($budgetForm->isSubmitted() && $budgetForm->isValid()) {
-            $formData = $budgetForm->getData();
-            $budgetTransfer = (new BudgetTransfer())->fromArray($formData, true);
-            $budgetTransfer
-                ->setIdCostCenter($idCostCenter)
-                ->setAmount((int)round($formData[BudgetForm::FIELD_AMOUNT] * 100));
-
-            $budgetResponseTransfer = $this->getFacade()->createBudget($budgetTransfer);
-
-            if ($budgetResponseTransfer->getIsSuccessful()) {
-                $this->addSuccessMessage('Budget created successfully.');
-
-                return $this->redirectResponse(
-                    sprintf('%s?%s=%d', static::URL_BUDGET_LIST, static::PARAM_ID_COST_CENTER, $idCostCenter),
-                );
-            }
-
-            foreach ($budgetResponseTransfer->getErrors() as $error) {
-                $this->addErrorMessage($error->getValueOrFail());
-            }
+        if (!$budgetForm->isSubmitted() || !$budgetForm->isValid()) {
+            return $this->viewResponse([
+                'budgetForm' => $budgetForm->createView(),
+                'idCostCenter' => $idCostCenter,
+                'costCenterName' => $costCenterName,
+            ]);
         }
 
-        return $this->viewResponse([
-            'budgetForm' => $budgetForm->createView(),
-            'idCostCenter' => $idCostCenter,
-            'costCenterName' => $costCenter->getName() ?? sprintf('#%d', $idCostCenter),
-        ]);
+        $budgetTransfer = (new BudgetTransfer())->fromArray($budgetForm->getData(), true);
+        $budgetTransfer->setIdCostCenter($idCostCenter);
+
+        $responseTransfer = $this->getFacade()->createBudgetCollection(
+            (new BudgetCollectionRequestTransfer())->addBudget($budgetTransfer),
+        );
+
+        if ($responseTransfer->getErrors()->count() > 0) {
+            $this->addTranslatedErrorMessages($responseTransfer->getErrors());
+
+            return $this->viewResponse([
+                'budgetForm' => $budgetForm->createView(),
+                'idCostCenter' => $idCostCenter,
+                'costCenterName' => $costCenterName,
+            ]);
+        }
+
+        $this->addSuccessMessage(static::MESSAGE_BUDGET_CREATED);
+
+        return $this->redirectResponse(
+            sprintf('%s?%s=%d', static::URL_BUDGET_LIST, static::PARAM_ID_COST_CENTER, $idCostCenter),
+        );
     }
 
     /**
@@ -103,53 +111,59 @@ class BudgetController extends AbstractController
         $idCostCenter = $this->castId($request->query->get(static::PARAM_ID_COST_CENTER));
         $idBudget = $this->castId($request->query->get(static::PARAM_ID_BUDGET));
 
-        $existingBudget = $this->getFacade()->getBudgetById($idBudget);
+        $budgetCollectionTransfer = $this->getFacade()->getBudgetCollection(
+            (new BudgetCriteriaTransfer())->setBudgetConditions(
+                (new BudgetConditionsTransfer())->addIdBudget($idBudget),
+            ),
+        );
 
-        if ($existingBudget->getIdBudget() === null) {
-            $this->addErrorMessage('Budget not found.');
+        if ($budgetCollectionTransfer->getBudgets()->count() === 0) {
+            $this->addErrorMessage(static::MESSAGE_BUDGET_NOT_FOUND);
 
             return $this->redirectResponse(
                 sprintf('%s?%s=%d', static::URL_BUDGET_LIST, static::PARAM_ID_COST_CENTER, $idCostCenter),
             );
         }
 
-        $costCenter = $this->getFacade()->getCostCenterById($idCostCenter);
+        $costCenterName = $this->getFactory()->createCostCenterReader()->findCostCenterName($idCostCenter);
+        $existingBudgetTransfer = $budgetCollectionTransfer->getBudgets()->getIterator()->current();
 
-        $formData = $existingBudget->toArray(true, true);
-        // Convert stored cents to decimal for display
-        $formData[BudgetForm::FIELD_AMOUNT] = $existingBudget->getAmountOrFail() / 100;
-
-        $budgetForm = $this->getFactory()->createBudgetForm($formData);
+        $budgetForm = $this->getFactory()->createBudgetForm($existingBudgetTransfer->toArray(true, true));
         $budgetForm->handleRequest($request);
 
-        if ($budgetForm->isSubmitted() && $budgetForm->isValid()) {
-            $submittedData = $budgetForm->getData();
-            $budgetTransfer = (new BudgetTransfer())->fromArray($submittedData, true);
-            $budgetTransfer
-                ->setIdBudget($idBudget)
-                ->setIdCostCenter($idCostCenter)
-                ->setAmount((int)round($submittedData[BudgetForm::FIELD_AMOUNT] * 100));
-
-            $budgetResponseTransfer = $this->getFacade()->updateBudget($budgetTransfer);
-
-            if ($budgetResponseTransfer->getIsSuccessful()) {
-                $this->addSuccessMessage('Budget updated successfully.');
-
-                return $this->redirectResponse(
-                    sprintf('%s?%s=%d', static::URL_BUDGET_LIST, static::PARAM_ID_COST_CENTER, $idCostCenter),
-                );
-            }
-
-            foreach ($budgetResponseTransfer->getErrors() as $error) {
-                $this->addErrorMessage($error->getValueOrFail());
-            }
+        if (!$budgetForm->isSubmitted() || !$budgetForm->isValid()) {
+            return $this->viewResponse([
+                'budgetForm' => $budgetForm->createView(),
+                'idCostCenter' => $idCostCenter,
+                'idBudget' => $idBudget,
+                'costCenterName' => $costCenterName,
+            ]);
         }
 
-        return $this->viewResponse([
-            'budgetForm' => $budgetForm->createView(),
-            'idCostCenter' => $idCostCenter,
-            'idBudget' => $idBudget,
-            'costCenterName' => $costCenter->getName() ?? sprintf('#%d', $idCostCenter),
-        ]);
+        $budgetTransfer = (new BudgetTransfer())->fromArray($budgetForm->getData(), true);
+        $budgetTransfer
+            ->setIdBudget($idBudget)
+            ->setIdCostCenter($idCostCenter);
+
+        $responseTransfer = $this->getFacade()->updateBudgetCollection(
+            (new BudgetCollectionRequestTransfer())->addBudget($budgetTransfer),
+        );
+
+        if ($responseTransfer->getErrors()->count() > 0) {
+            $this->addTranslatedErrorMessages($responseTransfer->getErrors());
+
+            return $this->viewResponse([
+                'budgetForm' => $budgetForm->createView(),
+                'idCostCenter' => $idCostCenter,
+                'idBudget' => $idBudget,
+                'costCenterName' => $costCenterName,
+            ]);
+        }
+
+        $this->addSuccessMessage(static::MESSAGE_BUDGET_UPDATED);
+
+        return $this->redirectResponse(
+            sprintf('%s?%s=%d', static::URL_BUDGET_LIST, static::PARAM_ID_COST_CENTER, $idCostCenter),
+        );
     }
 }

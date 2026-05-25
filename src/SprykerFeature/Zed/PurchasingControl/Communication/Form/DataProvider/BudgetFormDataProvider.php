@@ -27,24 +27,20 @@ class BudgetFormDataProvider
     }
 
     /**
-     * Collects unique currency ISO codes across all stores.
-     * Back Office has no current-store context, so we aggregate from all stores.
-     *
      * @return array<string, string>
      */
     protected function getCurrencyChoices(): array
     {
-        $choices = [];
-
+        $currencyChoices = [];
         foreach ($this->currencyFacade->getAllStoresWithCurrencies() as $storeWithCurrency) {
-            foreach ($storeWithCurrency->getCurrencies() as $currency) {
-                $code = $currency->getCodeOrFail();
-                $choices[$code] = $code;
+            foreach ($storeWithCurrency->getCurrencies() as $currencyTransfer) {
+                $code = $currencyTransfer->getCodeOrFail();
+                $currencyChoices[$code] = $code;
             }
         }
 
-        ksort($choices);
+        ksort($currencyChoices);
 
-        return $choices;
+        return $currencyChoices;
     }
 }

@@ -15,8 +15,9 @@ Name,Name
 Description,Beschreibung
 Amount,Betrag
 Currency,Währung
-"Starts At","Beginnt am"
-"Ends At","Endet am"
+"Start date",Startdatum
+"End date",Enddatum
+"Display warning","Warnung anzeigen"
 "Enforcement Rule",Durchsetzungsregel
 "Business Units",Geschäftseinheiten
 "Remaining Amount","Verbleibender Betrag"
@@ -26,8 +27,27 @@ Status,Status
 "Created At","Erstellt am"
 Actions,Aktionen
 Active,Aktiv
-Inactive,Inaktiv
-"Budget start date must be before end date.","Das Startdatum des Budgets muss vor dem Enddatum liegen."
-"Budget amount must be greater than zero.","Der Budgetbetrag muss größer als Null sein."
-"Budget currency must be a 3-character ISO code.","Die Budgetwährung muss ein 3-stelliger ISO-Code sein."
-"Cost center name must not be empty.","Der Name der Kostenstelle darf nicht leer sein."
+Deactivated,Deaktiviert
+"Budget not found.","Budget nicht gefunden."
+"Budget created successfully.","Budget erfolgreich erstellt."
+"Budget updated successfully.","Budget erfolgreich aktualisiert."
+"Cost center not found.","Kostenstelle nicht gefunden."
+"Cost center created successfully.","Kostenstelle erfolgreich erstellt."
+"Cost center updated successfully.","Kostenstelle erfolgreich aktualisiert."
+"Cost center updated successfully","Kostenstelle erfolgreich aktualisiert."
+"Cost Center & Budget","Kostenstelle & Budget"
+Company,Unternehmen
+"Budget Amount",Budgetbetrag
+"Budget Remaining Amount","Verbleibender Budgetbetrag"
+N/A,N/A
+"Cost Center",Kostenstelle
+Budget,Budget
+"Select Cost Centers","Kostenstellen auswählen"
+"Select Budget","Budget auswählen"
+"Block Order","Bestellung blockieren"
+"Display Warning","Warnung anzeigen"
+purchasing_control.budget.validation.currency_changed,"Budgetwährung kann nicht geändert werden."
+purchasing_control.budget.validation.amount_too_large,"Budgetbetrag überschreitet den maximal zulässigen Wert."
+purchasing_control.budget.validation.name_too_long,"Budgetname darf nicht mehr als 100 Zeichen enthalten."
+purchasing_control.cost_center.validation.name_too_long,"Name der Kostenstelle darf nicht mehr als 100 Zeichen enthalten."
+urchasing_control.budget.validation.end_date_in_past,"Enddatum darf nicht in der Vergangenheit liegen."

@@ -13,8 +13,7 @@ use Spryker\Zed\CheckoutExtension\Dependency\Plugin\CheckoutPostSaveInterface;
 use Spryker\Zed\Kernel\Communication\AbstractPlugin;
 
 /**
- * @method \SprykerFeature\Zed\PurchasingControl\Business\PurchasingControlFacadeInterface getFacade()
- * @method \SprykerFeature\Zed\PurchasingControl\Communication\PurchasingControlCommunicationFactory getFactory()
+ * @method \SprykerFeature\Zed\PurchasingControl\Business\PurchasingControlBusinessFactory getBusinessFactory()
  * @method \SprykerFeature\Zed\PurchasingControl\PurchasingControlConfig getConfig()
  */
 class ConsumeBudgetCheckoutPostSavePlugin extends AbstractPlugin implements CheckoutPostSaveInterface
@@ -22,26 +21,20 @@ class ConsumeBudgetCheckoutPostSavePlugin extends AbstractPlugin implements Chec
     /**
      * {@inheritDoc}
      * - Does nothing when no budget is selected on the quote.
-     * - Reads the grand total from the quote totals.
      * - Records budget consumption immediately after the order is saved so remaining balance
      *   is accurate for concurrent buyers from the moment the order is placed.
      *
      * @api
+     *
+     * @param \Generated\Shared\Transfer\QuoteTransfer $quoteTransfer
+     * @param \Generated\Shared\Transfer\CheckoutResponseTransfer $checkoutResponseTransfer
+     *
+     * @return void
      */
     public function executeHook(QuoteTransfer $quoteTransfer, CheckoutResponseTransfer $checkoutResponseTransfer): void
     {
-        $idBudget = $quoteTransfer->getIdBudget();
-
-        if ($idBudget === null) {
-            return;
-        }
-
-        $grandTotal = $quoteTransfer->getTotals() !== null
-            ? ($quoteTransfer->getTotalsOrFail()->getGrandTotal() ?? 0)
-            : 0;
-
-        $idSalesOrder = $checkoutResponseTransfer->getSaveOrderOrFail()->getIdSalesOrderOrFail();
-
-        $this->getFacade()->consumeBudget($idBudget, $idSalesOrder, $grandTotal);
+        $this->getBusinessFactory()
+            ->createBudgetConsumer()
+            ->consumeBudgetFromQuote($quoteTransfer, $checkoutResponseTransfer);
     }
 }

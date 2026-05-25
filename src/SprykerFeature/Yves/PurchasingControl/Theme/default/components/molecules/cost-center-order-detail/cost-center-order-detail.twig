@@ -1,0 +1,35 @@
+{% extends template('widget') %}
+
+{% define data = {
+    costCenterName: _widget.costCenterName,
+    budgetName: _widget.budgetName,
+} %}
+
+{% block body %}
+    {% set titleClass = 'title--h5' %}
+    {% set contentListClass = 'list' %}
+    {% set contentListItemClass = 'list__item' %}
+
+    {% block wrapper %}
+        {% block title %}
+            <h5 class="{{ titleClass }}">{{ 'purchasing_control.order.detail.title' | trans }}</h5>
+        {% endblock %}
+
+        {% block content %}
+            <ul class="{{ contentListClass }}">
+                <li class="{{ contentListItemClass }}">
+                    {{ 'purchasing_control.selector.label' | trans }}:
+                    <strong>{{ data.costCenterName ?? 'purchasing_control.order.detail.not_available' | trans }}</strong>
+                </li>
+                <li class="{{ contentListItemClass }}">
+                    {{ 'purchasing_control.budget.selector.label' | trans }}:
+                    <strong>{{ data.budgetName ?? 'purchasing_control.order.detail.not_available' | trans }}</strong>
+                </li>
+            </ul>
+        {% endblock %}
+
+        {% block separator %}
+            <hr class="box__separator">
+        {% endblock %}
+    {% endblock %}
+{% endblock %}

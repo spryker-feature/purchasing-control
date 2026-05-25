@@ -8,31 +8,24 @@
 namespace SprykerFeature\Zed\PurchasingControl\Persistence;
 
 use Generated\Shared\Transfer\BudgetCollectionTransfer;
+use Generated\Shared\Transfer\BudgetConsumptionCollectionTransfer;
+use Generated\Shared\Transfer\BudgetConsumptionCriteriaTransfer;
 use Generated\Shared\Transfer\BudgetCriteriaTransfer;
-use Generated\Shared\Transfer\BudgetTransfer;
 use Generated\Shared\Transfer\CostCenterCollectionTransfer;
 use Generated\Shared\Transfer\CostCenterCriteriaTransfer;
-use Generated\Shared\Transfer\CostCenterTransfer;
 
 interface PurchasingControlRepositoryInterface
 {
-    /**
-     * @api
-     */
-    public function findCostCenterCollection(CostCenterCriteriaTransfer $costCenterCriteriaTransfer): CostCenterCollectionTransfer;
+    public function getCostCenterCollection(CostCenterCriteriaTransfer $costCenterCriteriaTransfer): CostCenterCollectionTransfer;
+
+    public function getBudgetCollection(BudgetCriteriaTransfer $budgetCriteriaTransfer): BudgetCollectionTransfer;
+
+    public function getBudgetConsumptionCollection(BudgetConsumptionCriteriaTransfer $budgetConsumptionCriteriaTransfer): BudgetConsumptionCollectionTransfer;
 
     /**
-     * @api
+     * @param array<int> $companyBusinessUnitIds
+     *
+     * @return array<int>
      */
-    public function findCostCenterById(int $idCostCenter): ?CostCenterTransfer;
-
-    /**
-     * @api
-     */
-    public function findBudgetCollection(BudgetCriteriaTransfer $budgetCriteriaTransfer): BudgetCollectionTransfer;
-
-    /**
-     * @api
-     */
-    public function findBudgetById(int $idBudget): ?BudgetTransfer;
+    public function getCompanyBusinessUnitIdsForCompany(int $idCompany, array $companyBusinessUnitIds): array;
 }

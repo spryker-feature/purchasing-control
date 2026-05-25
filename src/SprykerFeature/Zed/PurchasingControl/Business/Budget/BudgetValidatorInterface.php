@@ -7,17 +7,22 @@
 
 namespace SprykerFeature\Zed\PurchasingControl\Business\Budget;
 
-use Generated\Shared\Transfer\CheckoutResponseTransfer;
-use Generated\Shared\Transfer\QuoteTransfer;
+use Generated\Shared\Transfer\BudgetCollectionRequestTransfer;
+use Generated\Shared\Transfer\BudgetCollectionResponseTransfer;
+use Generated\Shared\Transfer\BudgetTransfer;
 
 interface BudgetValidatorInterface
 {
     /**
-     * Validates the selected budget against the quote grand total.
-     * Returns true when no budget is selected, grand total is within remaining budget,
-     * or enforcement rule is 'warn' (warning added to response but checkout proceeds).
-     * Returns false and adds a checkout error when enforcement rule is 'block' and budget is exceeded,
-     * or when rule is 'require_approval' and the quote has not yet been approved.
+     * @return array<\Generated\Shared\Transfer\ErrorTransfer>
      */
-    public function validateBudgetForCheckout(QuoteTransfer $quoteTransfer, CheckoutResponseTransfer $checkoutResponseTransfer): bool;
+    public function validateBudget(BudgetTransfer $budgetTransfer, ?int $idCompany = null): array;
+
+    /**
+     * @return array<int, true>
+     */
+    public function validateBudgetCollection(
+        BudgetCollectionRequestTransfer $budgetCollectionRequestTransfer,
+        BudgetCollectionResponseTransfer $responseTransfer,
+    ): array;
 }

@@ -1,0 +1,39 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'cost-center-form',
+} %}
+
+{% define data = {
+    form: required,
+    formAction: required,
+} %}
+
+{% block body %}
+    {% include molecule('form') with {
+        data: {
+            form: data.form,
+            options: {
+                action: data.formAction,
+                method: 'post',
+            },
+            layout: {
+                name: 'col col--sm-12',
+                description: 'col col--sm-12',
+                companyBusinessUnitIds: 'col col--sm-12',
+                isActive: 'col col--sm-12',
+            },
+            submit: {
+                enable: true,
+                text: 'purchasing_control.cost_center.action.save' | trans,
+            },
+            cancel: {
+                enable: true,
+                url: url('company/cost-center'),
+                text: 'purchasing_control.cost_center.action.cancel' | trans,
+                icon: null,
+                class: 'button button--hollow',
+            },
+        },
+    } only %}
+{% endblock %}

@@ -40,4 +40,25 @@ class PurchasingControlConfig extends AbstractSharedConfig
      * @var string
      */
     public const string ENFORCEMENT_RULE_REQUIRE_APPROVAL = 'require_approval';
+
+    /**
+     * Specification:
+     * - Maximum number of characters allowed for cost center and budget names.
+     *
+     * @api
+     *
+     * @var int
+     */
+    public const int NAME_MAX_LENGTH = 255;
+
+    /**
+     * Specification:
+     * - Maximum budget amount in the smallest currency unit (e.g. cents).
+     * - Matches the INTEGER column capacity in the database.
+     *
+     * @api
+     *
+     * @var int
+     */
+    public const int BUDGET_AMOUNT_MAX = PHP_INT_MAX;
 }

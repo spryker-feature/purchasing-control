@@ -1,0 +1,21 @@
+{% extends template('page-layout-company', 'CompanyPage') %}
+
+{% define data = {
+    form: _view.form,
+    title: 'purchasing_control.cost_center.create.title' | trans,
+    activePage: 'cost-center',
+    currentBreadcrumb: 'purchasing_control.cost_center.create.title',
+} %}
+
+{% block companyContent %}
+    <div class="box">
+        {% block form %}
+            {% include molecule('cost-center-form', 'PurchasingControl') with {
+                data: {
+                    form: data.form,
+                    formAction: url('company/cost-center/create'),
+                },
+            } only %}
+        {% endblock %}
+    </div>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'data-filters',
+} %}
+
+{% define data = {
+    filters: required,
+} %}
+
+{% block separator %}
+    <hr class="box__separator">
+{% endblock %}
+
+{% block body %}
+    {% block filtersLayout %}
+        <div class="form__fields grid grid--bottom">
+            {% block filters %}
+                {% for filter in data.filters %}
+                    {% block filterLayout %}
+                        <div class="form__field col {{ filter.class }}">
+                            {% block filter %}
+                                {{ form_row(filter.row, { attr: filter.attr | default({}) }) }}
+                            {% endblock %}
+                        </div>
+                    {% endblock %}
+                {% endfor %}
+            {% endblock %}
+        </div>
+    {% endblock %}
+
+    {{ block('separator') }}
+
+    {% block submit %}
+        {% set buttonClass = 'button button--success' %}
+        {% set buttonText = 'forms.apply-btn' | trans %}
+        
+        <div class="form__fields grid grid--right">
+            <div class="form__field col">
+                {% block button %}
+                    <button class="{{ buttonClass }}" data-qa="submit-filters">{{ buttonText }}</button>
+                {% endblock %}
+            </div>
+        </div>
+    {% endblock %}
+
+    {{ block('separator') }}
+{% endblock %}

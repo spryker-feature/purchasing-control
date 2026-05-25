@@ -1,0 +1,128 @@
+{% extends template('page-layout-company', 'CompanyPage') %}
+
+{% define data = {
+    costCenter: _view.costCenter,
+    budgets: _view.budgets,
+    pagination: _view.pagination,
+    searchForm: _view.searchForm,
+    title: 'purchasing_control.budget.list.title' | trans,
+    activePage: 'cost-center',
+    currentBreadcrumb: 'purchasing_control.budget.list.title',
+} %}
+
+{% set jsPrefix = 'js-budget-' %}
+{% set formClass = 'js-budget-search-form' %}
+
+{% block companyContent %}
+    <div class="box">
+        {% block budgetHeader %}
+            <div class="grid grid--justify">
+                <div class="col">
+                    <a href="{{ url('company/cost-center') }}" class="button button--hollow">
+                        {{ 'purchasing_control.cost_center.list.title' | trans }}
+                    </a>
+                </div>
+                <div class="col col--right">
+                    <a href="{{ url('company/cost-center/budget/create', { costCenterUuid: data.costCenter.uuid }) }}" class="button button--success">
+                        {{ 'purchasing_control.budget.create.title' | trans }}
+                    </a>
+                </div>
+            </div>
+        {% endblock %}
+
+        {% block formStart %}
+            {{ form_start(data.searchForm, {
+                attr: {
+                    class: formClass,
+                },
+            }) }}
+        {% endblock %}
+
+        {% block filtersSection %}
+            {% set filters = data.searchForm.filters.children
+                | map(filter => {
+                    row: filter,
+                    class: 'col--md-6 col--lg-3',
+                    attr: { class: jsPrefix ~ filter.vars.name ~ '-target' },
+                })
+            %}
+
+            {% include molecule('form-filters') with {
+                data: {
+                    filters: filters,
+                },
+            } only %}
+        {% endblock %}
+
+        {% block activeFilters %}
+            {% include molecule('form-active-filters') with {
+                class: 'spacing-bottom spacing-bottom--big',
+                data: {
+                    form: data.searchForm,
+                    jsPrefix: jsPrefix,
+                    formClass: formClass,
+                },
+            } only %}
+        {% endblock %}
+
+        {% block budgetList %}
+            {% set today = 'now' | date('Y-m-d') %}
+
+            {% set columns = [
+                { id: 'spy_budget.name', title: 'purchasing_control.budget.form.name', sortable: true },
+                { id: 'spy_budget.amount', title: 'purchasing_control.budget.list.column.amount', sortable: true },
+                { id: 'ConsumedAmount', title: 'purchasing_control.budget.list.column.consumed', sortable: true },
+                { id: 'RemainingAmount', title: 'purchasing_control.budget.list.column.remaining', sortable: true },
+                { id: 'spy_budget.starts_at', title: 'purchasing_control.budget.list.column.period', sortable: true },
+                { id: 'spy_budget.enforcement_rule', title: 'purchasing_control.budget.list.column.enforcement_rule', sortable: true },
+                { id: 'spy_budget.is_active', title: 'purchasing_control.budget.list.column.status', sortable: true },
+                { id: 'actions', title: 'purchasing_control.budget.list.column.actions', type: 'actions' },
+            ] %}
+
+            {% set rows = data.budgets | map(budget => {
+                'spy_budget.name': budget.name,
+                'spy_budget.amount': budget.amount | default(0) | money(true, budget.currencyIsoCode),
+                ConsumedAmount: budget.consumedAmount | default(0) | money(true, budget.currencyIsoCode),
+                RemainingAmount: (budget.amount - budget.consumedAmount) | default(0) | money(true, budget.currencyIsoCode),
+                'spy_budget.starts_at': budget.startsAt | formatDate ~ ' – ' ~ budget.endsAt | formatDate,
+                'spy_budget.enforcement_rule': budget.enforcementRule == 'block'
+                    ? '<span class="label label--danger">' ~ ('purchasing_control.budget.form.enforcement_rule.block' | trans) ~ '</span>'
+                    : (budget.enforcementRule == 'warn'
+                        ? '<span class="label label--warning">' ~ ('purchasing_control.budget.form.enforcement_rule.warn' | trans) ~ '</span>'
+                        : '<span class="label label--info">' ~ ('purchasing_control.budget.form.enforcement_rule.require_approval' | trans) ~ '</span>'),
+                'spy_budget.is_active': budget.endsAt < today
+                    ? '<span class="label">' ~ ('purchasing_control.budget.status.archived' | trans) ~ '</span>'
+                    : (budget.isActive
+                        ? '<span class="label label--success">' ~ ('purchasing_control.budget.status.active' | trans) ~ '</span>'
+                        : '<span class="label label--danger">' ~ ('purchasing_control.budget.status.inactive' | trans) ~ '</span>'),
+                actions: [{
+                    url:url('company/cost-center/budget/update', { budgetUuid: budget.uuid, costCenterUuid: data.costCenter.uuid }),
+                    label: 'purchasing_control.budget.action.edit',
+                    qa: 'budget-edit-button',
+                }],
+            }) %}
+
+            {% include molecule('advanced-table') with {
+                data: {
+                    columns: columns,
+                    rows: rows,
+                    emptyText: 'purchasing_control.budget.list.empty',
+                    sortableForm: data.searchForm,
+                    sortableFormClass: formClass,
+                    pagination: {
+                        parameters: app.request.query.all,
+                        currentPage: data.pagination.page,
+                        paginationPath: 'company/cost-center/budget',
+                        paginationPathParameters: { costCenterUuid: data.costCenter.uuid },
+                        maxPage: data.pagination.lastPage,
+                        showAlwaysFirstAndLast: true,
+                    },
+                },
+            } only %}
+        {% endblock %}
+
+        {% block formEnd %}
+            {{ form_end(data.searchForm) }}
+        {% endblock %}
+    </div>
+{% endblock %}

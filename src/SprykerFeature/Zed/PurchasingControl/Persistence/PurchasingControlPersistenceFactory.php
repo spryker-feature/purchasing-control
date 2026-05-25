@@ -7,12 +7,14 @@
 
 namespace SprykerFeature\Zed\PurchasingControl\Persistence;
 
+use Orm\Zed\CompanyBusinessUnit\Persistence\SpyCompanyBusinessUnitQuery;
 use Orm\Zed\PurchasingControl\Persistence\SpyBudgetConsumptionQuery;
 use Orm\Zed\PurchasingControl\Persistence\SpyBudgetQuery;
 use Orm\Zed\PurchasingControl\Persistence\SpyCostCenterQuery;
 use Orm\Zed\PurchasingControl\Persistence\SpyCostCenterToCompanyBusinessUnitQuery;
 use Spryker\Zed\Kernel\Persistence\AbstractPersistenceFactory;
-use SprykerFeature\Zed\PurchasingControl\Persistence\Propel\Mapper\CostCenterMapper;
+use SprykerFeature\Zed\PurchasingControl\Persistence\Propel\Mapper\PurchasingControlMapper;
+use SprykerFeature\Zed\PurchasingControl\PurchasingControlDependencyProvider;
 
 /**
  * @method \SprykerFeature\Zed\PurchasingControl\PurchasingControlConfig getConfig()
@@ -41,8 +43,16 @@ class PurchasingControlPersistenceFactory extends AbstractPersistenceFactory
         return SpyBudgetConsumptionQuery::create();
     }
 
-    public function createCostCenterMapper(): CostCenterMapper
+    public function createPurchasingControlMapper(): PurchasingControlMapper
     {
-        return new CostCenterMapper();
+        return new PurchasingControlMapper();
+    }
+
+    /**
+     * @module CompanyBusinessUnit
+     */
+    public function getCompanyBusinessUnitQuery(): SpyCompanyBusinessUnitQuery
+    {
+        return $this->getProvidedDependency(PurchasingControlDependencyProvider::PROPEL_QUERY_COMPANY_BUSINESS_UNIT);
     }
 }

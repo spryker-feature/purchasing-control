@@ -1,0 +1,32 @@
+{% embed '@Gui/Partials/widget.twig' with { widget_title: 'Cost Center & Budget' | trans } %}
+    {% block widget_content %}
+        <table class="table table-striped">
+            <tbody>
+                <tr>
+                    <td><strong>{{ 'Company' | trans }}</strong></td>
+                    <td>{{ order.costCenter.company ?? order.companyName ?? 'N/A' | trans }}</td>
+                </tr>
+                <tr>
+                    <td><strong>{{ 'Cost Center' | trans }}</strong></td>
+                    <td>
+                        {% if order.costCenter is not null %}
+                            <a href="{{ url('/purchasing-control/cost-center/edit', {'id-cost-center': order.costCenter.idCostCenter}) }}">{{ order.costCenter.name }}</a>
+                        {% else %}
+                            {{ 'N/A' | trans }}
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>{{ 'Budget' | trans }}</strong></td>
+                    <td>
+                        {% if order.budget is not null %}
+                            <a href="{{ url('/purchasing-control/budget/edit', {'id-cost-center': order.budget.idCostCenter, 'id-budget': order.budget.idBudget}) }}">{{ order.budget.name }}</a>
+                        {% else %}
+                            {{ 'N/A' | trans }}
+                        {% endif %}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    {% endblock %}
+{% endembed %}

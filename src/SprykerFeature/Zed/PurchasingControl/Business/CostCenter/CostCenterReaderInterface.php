@@ -9,11 +9,8 @@ namespace SprykerFeature\Zed\PurchasingControl\Business\CostCenter;
 
 use Generated\Shared\Transfer\CostCenterCollectionTransfer;
 use Generated\Shared\Transfer\CostCenterCriteriaTransfer;
-use Generated\Shared\Transfer\CostCenterTransfer;
 
 interface CostCenterReaderInterface
 {
     public function getCostCenterCollection(CostCenterCriteriaTransfer $costCenterCriteriaTransfer): CostCenterCollectionTransfer;
-
-    public function getCostCenterById(int $idCostCenter): CostCenterTransfer;
 }

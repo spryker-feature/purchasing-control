@@ -7,10 +7,13 @@
 
 namespace SprykerFeature\Zed\PurchasingControl\Communication\Table;
 
+use Orm\Zed\PurchasingControl\Persistence\Map\SpyBudgetTableMap;
 use Orm\Zed\PurchasingControl\Persistence\Map\SpyCostCenterTableMap;
 use Orm\Zed\PurchasingControl\Persistence\SpyBudgetQuery;
 use Orm\Zed\PurchasingControl\Persistence\SpyCostCenterQuery;
+use Propel\Runtime\ActiveQuery\Criteria;
 use Spryker\Service\UtilDateTime\UtilDateTimeServiceInterface;
+use Spryker\Service\UtilText\Model\Url\Url;
 use Spryker\Zed\Gui\Communication\Table\AbstractTable;
 use Spryker\Zed\Gui\Communication\Table\TableConfiguration;
 
@@ -21,31 +24,41 @@ class CostCenterTable extends AbstractTable
      *
      * @var string
      */
-    protected const BASE_URL = '/purchasing-control/cost-center';
+    protected const string BASE_URL = '/purchasing-control/cost-center';
 
-    protected const COL_ACTIONS = 'actions';
+    protected const string COL_ACTIONS = 'actions';
 
-    protected const COL_STATUS = 'status';
+    protected const string COL_STATUS = 'status';
 
-    protected const COL_BUSINESS_UNITS = 'business_units';
+    protected const string COL_BUSINESS_UNITS = 'business_units';
 
-    protected const COL_BUDGETS = 'budgets';
+    protected const string COL_BUDGETS = 'budgets';
 
-    protected const VISIBLE_LIMIT = 3;
+    protected const int VISIBLE_LIMIT = 3;
 
-    protected const LABEL_ACTIVE = '<span class="badge badge-soft-success">Active</span>';
+    protected const string LABEL_ACTIVE = 'Active';
 
-    protected const LABEL_INACTIVE = '<span class="badge badge-soft-secondary">Inactive</span>';
+    protected const string LABEL_INACTIVE = 'Deactivated';
 
-    protected const BUTTON_EDIT = 'Edit';
+    protected const string LABEL_CLASS_ACTIVE = 'label-success';
 
-    protected const BUTTON_BUDGETS = 'Budgets';
+    protected const string LABEL_CLASS_INACTIVE = 'label-danger';
 
-    protected const URL_EDIT = '/purchasing-control/cost-center/edit';
+    protected const string BUTTON_EDIT = 'Edit';
 
-    protected const URL_BUDGET = '/purchasing-control/budget';
+    protected const string BUTTON_BUDGETS = 'Budgets';
 
-    protected const PARAM_ID_COST_CENTER = 'id-cost-center';
+    /**
+     * @uses \SprykerFeature\Zed\PurchasingControl\Communication\Controller\CostCenterController::editAction()
+     */
+    protected const string URL_EDIT = '/purchasing-control/cost-center/edit';
+
+    /**
+     * @uses \SprykerFeature\Zed\PurchasingControl\Communication\Controller\BudgetController::indexAction()
+     */
+    protected const string URL_BUDGET = '/purchasing-control/budget';
+
+    protected const string PARAM_ID_COST_CENTER = 'id-cost-center';
 
     public function __construct(
         protected SpyCostCenterQuery $costCenterQuery,
@@ -57,17 +70,8 @@ class CostCenterTable extends AbstractTable
 
     protected function configure(TableConfiguration $config): TableConfiguration
     {
-        $config->setUrl('table');
-
-        $config->setHeader([
-            SpyCostCenterTableMap::COL_ID_COST_CENTER => 'ID',
-            SpyCostCenterTableMap::COL_NAME => 'Name',
-            static::COL_BUSINESS_UNITS => 'Business Units',
-            static::COL_BUDGETS => 'Budgets',
-            static::COL_STATUS => 'Status',
-            SpyCostCenterTableMap::COL_CREATED_AT => 'Created At',
-            static::COL_ACTIONS => 'Actions',
-        ]);
+        $config->setUrl($this->buildTableUrl());
+        $config->setHeader($this->getTableHeaders());
 
         $config->setSearchable([
             SpyCostCenterTableMap::COL_NAME,
@@ -91,6 +95,27 @@ class CostCenterTable extends AbstractTable
         return $config;
     }
 
+    protected function buildTableUrl(): string
+    {
+        return Url::generate('/table', $this->getRequest()->query->all())->build();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function getTableHeaders(): array
+    {
+        return [
+            SpyCostCenterTableMap::COL_ID_COST_CENTER => 'ID',
+            SpyCostCenterTableMap::COL_NAME => 'Name',
+            static::COL_BUSINESS_UNITS => 'Business Units',
+            static::COL_BUDGETS => 'Budgets',
+            static::COL_STATUS => 'Status',
+            SpyCostCenterTableMap::COL_CREATED_AT => 'Created At',
+            static::COL_ACTIONS => 'Actions',
+        ];
+    }
+
     protected function prepareQuery(): SpyCostCenterQuery
     {
         return $this->costCenterQuery;
@@ -104,10 +129,14 @@ class CostCenterTable extends AbstractTable
     protected function prepareData(TableConfiguration $config): array
     {
         $queryResults = $this->runQuery($this->prepareQuery(), $config);
-        $results = [];
 
+        $costCenterIds = array_column((array)$queryResults, SpyCostCenterTableMap::COL_ID_COST_CENTER);
+        $businessUnitNamesByCostCenterId = $this->getBusinessUnitNamesByCostCenterIds($costCenterIds);
+        $budgetNamesByCostCenterId = $this->getBudgetNamesByCostCenterIds($costCenterIds);
+
+        $results = [];
         foreach ($queryResults as $item) {
-            $results[] = $this->formatRow($item);
+            $results[] = $this->formatRow($item, $businessUnitNamesByCostCenterId, $budgetNamesByCostCenterId);
         }
 
         return $results;
@@ -115,21 +144,23 @@ class CostCenterTable extends AbstractTable
 
     /**
      * @param array<string, mixed> $item
+     * @param array<int, array<string>> $businessUnitNamesByCostCenterId
+     * @param array<int, array<string>> $budgetNamesByCostCenterId
      *
      * @return array<string, mixed>
      */
-    protected function formatRow(array $item): array
+    protected function formatRow(array $item, array $businessUnitNamesByCostCenterId, array $budgetNamesByCostCenterId): array
     {
         $idCostCenter = (int)$item[SpyCostCenterTableMap::COL_ID_COST_CENTER];
 
         return [
             SpyCostCenterTableMap::COL_ID_COST_CENTER => $idCostCenter,
             SpyCostCenterTableMap::COL_NAME => $item[SpyCostCenterTableMap::COL_NAME],
-            static::COL_BUSINESS_UNITS => $this->renderBusinessUnits($idCostCenter),
-            static::COL_BUDGETS => $this->renderBudgets($idCostCenter),
+            static::COL_BUSINESS_UNITS => $this->renderNameList($businessUnitNamesByCostCenterId[$idCostCenter] ?? []),
+            static::COL_BUDGETS => $this->renderNameList($budgetNamesByCostCenterId[$idCostCenter] ?? []),
             static::COL_STATUS => $item[SpyCostCenterTableMap::COL_IS_ACTIVE]
-                ? static::LABEL_ACTIVE
-                : static::LABEL_INACTIVE,
+                ? $this->generateLabel(static::LABEL_ACTIVE, static::LABEL_CLASS_ACTIVE)
+                : $this->generateLabel(static::LABEL_INACTIVE, static::LABEL_CLASS_INACTIVE),
             SpyCostCenterTableMap::COL_CREATED_AT => $this->utilDateTimeService->formatDateTime(
                 $item[SpyCostCenterTableMap::COL_CREATED_AT],
             ),
@@ -137,38 +168,68 @@ class CostCenterTable extends AbstractTable
         ];
     }
 
-    protected function renderBusinessUnits(int $idCostCenter): string
+    /**
+     * @param array<int> $costCenterIds
+     *
+     * @return array<int, array<string>>
+     */
+    protected function getBusinessUnitNamesByCostCenterIds(array $costCenterIds): array
     {
-        $junctions = $this->costCenterQuery::create()
-            ->filterByIdCostCenter($idCostCenter)
+        if (!$costCenterIds) {
+            return [];
+        }
+
+        $costCenterEntities = $this->costCenterQuery::create()
+            ->filterByIdCostCenter($costCenterIds, Criteria::IN)
             ->leftJoinWithSpyCostCenterToCompanyBusinessUnit()
-            ->leftJoinWith('SpyCostCenterToCompanyBusinessUnit.SpyCompanyBusinessUnit')
+            ->useSpyCostCenterToCompanyBusinessUnitQuery()
+                ->leftJoinWithSpyCompanyBusinessUnit()
+            ->endUse()
             ->find();
 
-        $names = [];
-        foreach ($junctions as $costCenter) {
-            foreach ($costCenter->getSpyCostCenterToCompanyBusinessUnits() as $junction) {
-                $bu = $junction->getSpyCompanyBusinessUnit();
-                if ($bu !== null) {
-                    $names[] = htmlspecialchars($bu->getName());
+        $namesByCostCenterId = [];
+        foreach ($costCenterEntities as $costCenterEntity) {
+            $idCostCenter = $costCenterEntity->getIdCostCenter();
+            $namesByCostCenterId[$idCostCenter] = [];
+
+            foreach ($costCenterEntity->getSpyCostCenterToCompanyBusinessUnits() as $junctionEntity) {
+                $businessUnitEntity = $junctionEntity->getSpyCompanyBusinessUnit();
+
+                if ($businessUnitEntity === null) {
+                    continue;
                 }
+
+                $namesByCostCenterId[$idCostCenter][] = htmlspecialchars($businessUnitEntity->getName());
             }
         }
 
-        return $this->renderNameList($names);
+        return $namesByCostCenterId;
     }
 
-    protected function renderBudgets(int $idCostCenter): string
+    /**
+     * @param array<int> $costCenterIds
+     *
+     * @return array<int, array<string>>
+     */
+    protected function getBudgetNamesByCostCenterIds(array $costCenterIds): array
     {
-        $names = $this->budgetQuery::create()
-            ->filterByFkCostCenter($idCostCenter)
-            ->select(['Name'])
+        if (!$costCenterIds) {
+            return [];
+        }
+
+        $budgets = $this->budgetQuery::create()
+            ->filterByFkCostCenter($costCenterIds, Criteria::IN)
+            ->select([SpyBudgetTableMap::COL_FK_COST_CENTER, SpyBudgetTableMap::COL_NAME])
             ->find()
             ->getData();
 
-        $names = array_map('htmlspecialchars', $names);
+        $namesByCostCenterId = [];
+        foreach ($budgets as $budget) {
+            $idCostCenter = (int)$budget[SpyBudgetTableMap::COL_FK_COST_CENTER];
+            $namesByCostCenterId[$idCostCenter][] = htmlspecialchars($budget[SpyBudgetTableMap::COL_NAME]);
+        }
 
-        return $this->renderNameList($names);
+        return $namesByCostCenterId;
     }
 
     /**
@@ -190,15 +251,11 @@ class CostCenterTable extends AbstractTable
 
     protected function buildActions(int $idCostCenter): string
     {
-        $editUrl = $this->buildUrl(static::URL_EDIT . '?' . http_build_query([static::PARAM_ID_COST_CENTER => $idCostCenter]));
-        $budgetUrl = $this->buildUrl(static::URL_BUDGET . '?' . http_build_query([static::PARAM_ID_COST_CENTER => $idCostCenter]));
+        $editUrl = Url::generate(static::URL_EDIT, [static::PARAM_ID_COST_CENTER => $idCostCenter]);
+        $budgetUrl = Url::generate(static::URL_BUDGET, [static::PARAM_ID_COST_CENTER => $idCostCenter]);
 
-        return sprintf(
-            '<a href="%s" class="btn btn-xs btn-primary">%s</a> <a href="%s" class="btn btn-xs btn-default">%s</a>',
-            $editUrl,
-            static::BUTTON_EDIT,
-            $budgetUrl,
-            static::BUTTON_BUDGETS,
-        );
+        return $this->generateEditButton($editUrl, static::BUTTON_EDIT)
+            . ' '
+            . $this->generateButton($budgetUrl, static::BUTTON_BUDGETS, ['class' => 'btn-default', 'icon' => 'fa-money']);
     }
 }

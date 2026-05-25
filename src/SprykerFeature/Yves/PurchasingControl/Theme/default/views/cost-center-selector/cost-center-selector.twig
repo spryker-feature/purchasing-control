@@ -1,0 +1,27 @@
+{% extends template('widget') %}
+
+{% define data = {
+    form: _widget.form,
+    selectedCostCenter: _widget.selectedCostCenter,
+    selectedBudget: _widget.selectedBudget,
+    quote: _widget.quote,
+    isLocked: _widget.isLocked,
+} %}
+
+{%- block template -%}
+    {% if data.form.idCostCenter.vars.choices | length > 0 %}
+        {{ parent() }}
+    {% endif %}
+{%- endblock -%}
+
+{% block body %}
+    {% include molecule('cost-center-selector', 'PurchasingControl') with {
+        data: {
+            form: data.form,
+            selectedCostCenter: data.selectedCostCenter,
+            selectedBudget: data.selectedBudget,
+            quote: data.quote,
+            isLocked: data.isLocked,
+        }
+    } only %}
+{% endblock %}

@@ -7,8 +7,10 @@
 
 namespace SprykerFeature\Zed\PurchasingControl\Communication\Form;
 
+use DateTime;
 use Spryker\Zed\Kernel\Communication\Form\AbstractType;
 use SprykerFeature\Shared\PurchasingControl\PurchasingControlConfig;
+use Symfony\Component\Form\CallbackTransformer;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
@@ -17,6 +19,9 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\GreaterThan;
+use Symfony\Component\Validator\Constraints\GreaterThanOrEqual;
+use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Component\Validator\Constraints\LessThanOrEqual;
 use Symfony\Component\Validator\Constraints\NotBlank;
 
 class BudgetForm extends AbstractType
@@ -59,8 +64,11 @@ class BudgetForm extends AbstractType
     {
         $builder->add(static::FIELD_NAME, TextType::class, [
             'label' => 'Name',
-            'constraints' => [new NotBlank()],
-            'attr' => ['data-qa' => 'budget-name'],
+            'constraints' => [
+                new NotBlank(),
+                new Length(['max' => PurchasingControlConfig::NAME_MAX_LENGTH, 'maxMessage' => 'purchasing_control.budget.validation.name_too_long']),
+            ],
+            'attr' => ['data-qa' => 'budget-name', 'maxlength' => PurchasingControlConfig::NAME_MAX_LENGTH],
         ]);
 
         return $this;
@@ -74,9 +82,17 @@ class BudgetForm extends AbstractType
             'constraints' => [
                 new NotBlank(),
                 new GreaterThan(['value' => 0]),
+                new LessThanOrEqual(['value' => PurchasingControlConfig::BUDGET_AMOUNT_MAX, 'message' => 'purchasing_control.budget.validation.amount_too_large']),
             ],
-            'attr' => ['data-qa' => 'budget-amount'],
+            'attr' => ['data-qa' => 'budget-amount', 'placeholder' => '3000.00'],
         ]);
+
+        $builder->get(static::FIELD_AMOUNT)->addModelTransformer(
+            new CallbackTransformer(
+                fn (?int $cents) => $cents !== null ? $cents / 100 : null,
+                fn (?float $amount) => $amount !== null ? (int)round($amount * 100) : null,
+            ),
+        );
 
         return $this;
     }
@@ -103,7 +119,7 @@ class BudgetForm extends AbstractType
     protected function addStartsAtField(FormBuilderInterface $builder): static
     {
         $builder->add(static::FIELD_STARTS_AT, DateType::class, [
-            'label' => 'Starts At',
+            'label' => 'Start date',
             'widget' => 'single_text',
             'input' => 'string',
             'constraints' => [new NotBlank()],
@@ -116,11 +132,17 @@ class BudgetForm extends AbstractType
     protected function addEndsAtField(FormBuilderInterface $builder): static
     {
         $builder->add(static::FIELD_ENDS_AT, DateType::class, [
-            'label' => 'Ends At',
+            'label' => 'End date',
             'widget' => 'single_text',
             'input' => 'string',
-            'constraints' => [new NotBlank()],
-            'attr' => ['data-qa' => 'budget-ends-at'],
+            'constraints' => [
+                new NotBlank(),
+                new GreaterThanOrEqual([
+                    'value' => (new DateTime('today'))->format('Y-m-d'),
+                    'message' => 'purchasing_control.budget.validation.end_date_in_past',
+                ]),
+            ],
+            'attr' => ['data-qa' => 'budget-ends-at', 'min' => (new DateTime('today'))->format('Y-m-d')],
         ]);
 
         return $this;
@@ -132,7 +154,7 @@ class BudgetForm extends AbstractType
             'label' => 'Enforcement Rule',
             'choices' => [
                 'Block order' => PurchasingControlConfig::ENFORCEMENT_RULE_BLOCK,
-                'Warn only' => PurchasingControlConfig::ENFORCEMENT_RULE_WARN,
+                'Display warning' => PurchasingControlConfig::ENFORCEMENT_RULE_WARN,
                 'Require approval' => PurchasingControlConfig::ENFORCEMENT_RULE_REQUIRE_APPROVAL,
             ],
             'constraints' => [new NotBlank()],

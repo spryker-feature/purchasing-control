@@ -7,52 +7,106 @@
 
 namespace SprykerFeature\Zed\PurchasingControl\Communication\Form\DataProvider;
 
+use Generated\Shared\Transfer\CompanyBusinessUnitCollectionTransfer;
 use Generated\Shared\Transfer\CompanyBusinessUnitCriteriaFilterTransfer;
-use Generated\Shared\Transfer\PaginationTransfer;
+use Generated\Shared\Transfer\CostCenterTransfer;
 use Spryker\Zed\CompanyBusinessUnit\Business\CompanyBusinessUnitFacadeInterface;
 use SprykerFeature\Zed\PurchasingControl\Communication\Form\CostCenterForm;
-use SprykerFeature\Zed\PurchasingControl\PurchasingControlConfig;
 
 class CostCenterFormDataProvider
 {
     public function __construct(
-        protected CompanyBusinessUnitFacadeInterface $companyBusinessUnitFacade,
-        protected PurchasingControlConfig $config,
+        protected CompanyBusinessUnitFacadeInterface $companyBusinessUnitFacade
     ) {
     }
 
     /**
      * @return array<string, mixed>
      */
-    public function getOptions(): array
+    public function getOptions(?CostCenterTransfer $costCenterTransfer = null): array
     {
+        $companyBusinessUnitIds = $costCenterTransfer ? $costCenterTransfer->getCompanyBusinessUnitIds() : [];
+        $companyBusinessUnitCollectionTransfer = $this->getCompanyBusinessUnitCollectionTransfer(
+            $companyBusinessUnitIds,
+        );
+
         return [
-            CostCenterForm::OPTION_BUSINESS_UNIT_CHOICES => $this->getBusinessUnitChoices(),
+            CostCenterForm::OPTION_COMPANY_CHOICES => $this->getAssignedCompanies($companyBusinessUnitCollectionTransfer),
+            CostCenterForm::OPTION_BUSINESS_UNIT_CHOICES => $this->getBusinessUnitChoices($companyBusinessUnitCollectionTransfer),
         ];
     }
 
     /**
      * @return array<string, int>
      */
-    protected function getBusinessUnitChoices(): array
+    public function getAssignedCompanies(CompanyBusinessUnitCollectionTransfer $companyBusinessUnitCollectionTransfer): array
     {
-        // Projects with large BU datasets should override `getBusinessUnitSelectLimit()` or switch to async autocomplete
-        $paginationTransfer = (new PaginationTransfer())
-            ->setPage(1)
-            ->setMaxPerPage($this->config->getBusinessUnitSelectLimit());
+        $companyChoices = [];
+        foreach ($companyBusinessUnitCollectionTransfer->getCompanyBusinessUnits() as $companyBusinessUnitTransfer) {
+            $idCompany = $companyBusinessUnitTransfer->getFkCompany();
+            if ($idCompany === null) {
+                continue;
+            }
 
-        $criteriaFilterTransfer = (new CompanyBusinessUnitCriteriaFilterTransfer())
-            ->setPagination($paginationTransfer);
-
-        $companyBusinessUnitCollection = $this->companyBusinessUnitFacade
-            ->getCompanyBusinessUnitCollection($criteriaFilterTransfer);
-
-        $choices = [];
-
-        foreach ($companyBusinessUnitCollection->getCompanyBusinessUnits() as $companyBusinessUnit) {
-            $choices[$companyBusinessUnit->getNameOrFail()] = $companyBusinessUnit->getIdCompanyBusinessUnitOrFail();
+            $companyName = $companyBusinessUnitTransfer->getCompany()?->getName();
+            $companyChoices[sprintf('%s (ID: %s)', $companyName, $idCompany)] = $idCompany;
         }
 
-        return $choices;
+        return $companyChoices;
+    }
+
+    /**
+     * @param array<string, mixed> $formOptions
+     * @param array<string, mixed> $submittedData
+     *
+     * @return array<string, mixed>
+     */
+    public function expandOptionsWithSubmittedData(array $formOptions, array $submittedData): array
+    {
+        $submittedBuIds = $submittedData[CostCenterForm::FIELD_COMPANY_BUSINESS_UNIT_IDS] ?? [];
+
+        if ($submittedBuIds) {
+            $companyBusinessUnitCollectionTransfer = $this->getCompanyBusinessUnitCollectionTransfer(
+                array_map('intval', (array)$submittedBuIds),
+            );
+
+            $formOptions[CostCenterForm::OPTION_BUSINESS_UNIT_CHOICES] = $this->getBusinessUnitChoices($companyBusinessUnitCollectionTransfer);
+            $formOptions[CostCenterForm::OPTION_COMPANY_CHOICES] = $this->getAssignedCompanies($companyBusinessUnitCollectionTransfer);
+        }
+
+        return $formOptions;
+    }
+
+    /**
+     * @param array<int> $companyBusinessUnitIds
+     *
+     * @return \Generated\Shared\Transfer\CompanyBusinessUnitCollectionTransfer
+     */
+    protected function getCompanyBusinessUnitCollectionTransfer(array $companyBusinessUnitIds): CompanyBusinessUnitCollectionTransfer
+    {
+        if (!$companyBusinessUnitIds) {
+            return new CompanyBusinessUnitCollectionTransfer();
+        }
+
+        return $this->companyBusinessUnitFacade->getCompanyBusinessUnitCollection(
+            (new CompanyBusinessUnitCriteriaFilterTransfer())->setCompanyBusinessUnitIds($companyBusinessUnitIds),
+        );
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    protected function getBusinessUnitChoices(CompanyBusinessUnitCollectionTransfer $companyBusinessUnitCollectionTransfer): array
+    {
+        $companyBusinessUnitChoices = [];
+        foreach ($companyBusinessUnitCollectionTransfer->getCompanyBusinessUnits() as $companyBusinessUnitTransfer) {
+            $companyBusinessUnitChoices[sprintf(
+                '%s (ID: %s)',
+                $companyBusinessUnitTransfer->getNameOrFail(),
+                $companyBusinessUnitTransfer->getIdCompanyBusinessUnitOrFail(),
+            )] = $companyBusinessUnitTransfer->getIdCompanyBusinessUnitOrFail();
+        }
+
+        return $companyBusinessUnitChoices;
     }
 }

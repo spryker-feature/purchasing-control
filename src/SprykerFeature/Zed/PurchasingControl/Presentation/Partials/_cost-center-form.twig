@@ -1,0 +1,19 @@
+{{ form_start(form) }}
+    {{ form_errors(form) }}
+
+    <div class="row">
+        <div class="col-sm-6">
+            {{ form_row(form.name) }}
+            {{ form_row(form.idCompany) }}
+            {{ form_row(form.companyBusinessUnitIds) }}
+            {{ form_row(form.isActive) }}
+        </div>
+        <div class="col-sm-6">
+            {{ form_row(form.description) }}
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn" data-qa="submit-button">{{ 'Save' | trans }}</button>
+    </div>
+{{ form_end(form) }}

@@ -19,8 +19,11 @@ class CostCenterQuoteFieldsAllowedForSavingProviderPlugin extends AbstractPlugin
 {
     /**
      * {@inheritDoc}
+     * - Provides `idCostCenter` and `idBudget` as quote fields allowed to be persisted to the database.
      *
      * @api
+     *
+     * @param \Generated\Shared\Transfer\QuoteTransfer $quoteTransfer
      *
      * @return list<string>
      */

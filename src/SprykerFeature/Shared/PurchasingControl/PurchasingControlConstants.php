@@ -12,24 +12,4 @@ namespace SprykerFeature\Shared\PurchasingControl;
  */
 interface PurchasingControlConstants
 {
-    /**
-     * @api
-     *
-     * @var string
-     */
-    public const ENFORCEMENT_RULE_BLOCK = 'block';
-
-    /**
-     * @api
-     *
-     * @var string
-     */
-    public const ENFORCEMENT_RULE_WARN = 'warn';
-
-    /**
-     * @api
-     *
-     * @var string
-     */
-    public const ENFORCEMENT_RULE_REQUIRE_APPROVAL = 'require_approval';
 }

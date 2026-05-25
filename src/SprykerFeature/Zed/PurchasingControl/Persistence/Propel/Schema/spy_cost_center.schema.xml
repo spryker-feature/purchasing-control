@@ -10,7 +10,7 @@
         <column name="id_cost_center" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
         <column name="name" type="VARCHAR" size="255" required="true"/>
         <column name="description" type="LONGVARCHAR"/>
-<column name="is_active" type="BOOLEAN" required="true" default="false"/>
+        <column name="is_active" type="BOOLEAN" required="true" default="false"/>
         <column name="uuid" type="VARCHAR" size="36"/>
 
         <unique name="spy_cost_center-uuid">
@@ -59,7 +59,7 @@
         <column name="id_budget" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
         <column name="fk_cost_center" type="INTEGER" required="true"/>
         <column name="name" type="VARCHAR" size="255" required="true"/>
-        <column name="amount" type="INTEGER" required="true"/>
+        <column name="amount" type="BIGINT" required="true"/>
         <column name="currency_iso_code" type="VARCHAR" size="3" required="true"/>
         <column name="starts_at" type="DATE" required="true"/>
         <column name="ends_at" type="DATE" required="true"/>
@@ -93,7 +93,7 @@
         <column name="id_budget_consumption" type="INTEGER" required="true" autoIncrement="true" primaryKey="true"/>
         <column name="fk_budget" type="INTEGER" required="true"/>
         <column name="fk_sales_order" type="INTEGER"/>
-        <column name="amount" type="INTEGER" required="true"/>
+        <column name="amount" type="BIGINT" required="true"/>
 
         <foreign-key name="spy_budget_consumption-fk_budget"
                      foreignTable="spy_budget">

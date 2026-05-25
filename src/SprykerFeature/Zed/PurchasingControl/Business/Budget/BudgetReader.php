@@ -9,7 +9,6 @@ namespace SprykerFeature\Zed\PurchasingControl\Business\Budget;
 
 use Generated\Shared\Transfer\BudgetCollectionTransfer;
 use Generated\Shared\Transfer\BudgetCriteriaTransfer;
-use Generated\Shared\Transfer\BudgetTransfer;
 use SprykerFeature\Zed\PurchasingControl\Persistence\PurchasingControlRepositoryInterface;
 
 class BudgetReader implements BudgetReaderInterface
@@ -18,25 +17,8 @@ class BudgetReader implements BudgetReaderInterface
     {
     }
 
-    public function getActiveBudgetsForCostCenter(int $idCostCenter, string $currencyIsoCode): BudgetCollectionTransfer
+    public function getBudgetCollection(BudgetCriteriaTransfer $budgetCriteriaTransfer): BudgetCollectionTransfer
     {
-        $budgetCriteriaTransfer = (new BudgetCriteriaTransfer())
-            ->setIdCostCenter($idCostCenter)
-            ->setCurrencyIsoCode($currencyIsoCode)
-            ->setIsActive(true)
-            ->setActiveOnDate(date('Y-m-d'));
-
-        return $this->costCenterRepository->findBudgetCollection($budgetCriteriaTransfer);
-    }
-
-    public function getBudgetById(int $idBudget): BudgetTransfer
-    {
-        $budgetTransfer = $this->costCenterRepository->findBudgetById($idBudget);
-
-        if ($budgetTransfer === null) {
-            return new BudgetTransfer();
-        }
-
-        return $budgetTransfer;
+        return $this->costCenterRepository->getBudgetCollection($budgetCriteriaTransfer);
     }
 }

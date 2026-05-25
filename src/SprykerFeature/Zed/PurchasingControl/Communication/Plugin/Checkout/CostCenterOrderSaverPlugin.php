@@ -13,16 +13,26 @@ use Spryker\Zed\CheckoutExtension\Dependency\Plugin\CheckoutDoSaveOrderInterface
 use Spryker\Zed\Kernel\Communication\AbstractPlugin;
 
 /**
- * {@inheritDoc}
- *
- * @api
- *
- * @method \SprykerFeature\Zed\PurchasingControl\Business\PurchasingControlFacadeInterface getFacade()
+ * @method \SprykerFeature\Zed\PurchasingControl\Business\PurchasingControlBusinessFactory getBusinessFactory()
  */
 class CostCenterOrderSaverPlugin extends AbstractPlugin implements CheckoutDoSaveOrderInterface
 {
+    /**
+     * {@inheritDoc}
+     * - Saves the cost center and budget references from the quote to the sales order.
+     * - Does nothing when no cost center is selected on the quote.
+     *
+     * @api
+     *
+     * @param \Generated\Shared\Transfer\QuoteTransfer $quoteTransfer
+     * @param \Generated\Shared\Transfer\SaveOrderTransfer $saveOrderTransfer
+     *
+     * @return void
+     */
     public function saveOrder(QuoteTransfer $quoteTransfer, SaveOrderTransfer $saveOrderTransfer): void
     {
-        $this->getFacade()->saveCostCenterToOrder($quoteTransfer, $saveOrderTransfer);
+        $this->getBusinessFactory()
+            ->createCostCenterOrderSaver()
+            ->saveCostCenterToOrder($quoteTransfer, $saveOrderTransfer);
     }
 }

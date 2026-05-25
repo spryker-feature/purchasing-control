@@ -1,0 +1,10 @@
+{% extends template('widget') %}
+
+{% block body %}
+    {% include molecule('cost-center-budget-filter', 'PurchasingControl') with {
+        attributes: {
+            'cost-center-selector': '[name$="[costCenterIds]"]',
+            'budget-selector': '[name$="[budgetIds]"]',
+        },
+    } only %}
+{% endblock %}

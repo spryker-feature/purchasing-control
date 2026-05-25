@@ -7,75 +7,88 @@
 
 namespace SprykerFeature\Yves\PurchasingControl\Controller;
 
+use Generated\Shared\Transfer\CostCenterQuoteUpdateRequestTransfer;
+use Generated\Shared\Transfer\CostCenterQuoteUpdateResponseTransfer;
+use Generated\Shared\Transfer\QuoteTransfer;
 use Spryker\Yves\Kernel\Controller\AbstractController;
+use SprykerFeature\Yves\PurchasingControl\Form\CostCenterSelectorForm;
+use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
  * @method \SprykerFeature\Yves\PurchasingControl\PurchasingControlFactory getFactory()
+ * @method \SprykerFeature\Yves\PurchasingControl\PurchasingControlConfig getConfig()
  */
 class CostCenterController extends AbstractController
 {
+    /**
+     * @uses \SprykerShop\Yves\CheckoutPage\Controller\CheckoutController::summaryAction()
+     */
     protected const string ROUTE_CHECKOUT_SUMMARY = 'checkout-summary';
 
     public function updateQuoteAction(Request $request): RedirectResponse
     {
-        $idCostCenter = (int)$request->request->get('idCostCenter');
-        $idBudget = (int)$request->request->get('idBudget');
+        $response = $this->redirectResponseInternal(static::ROUTE_CHECKOUT_SUMMARY);
 
         $customerTransfer = $this->getFactory()->getCustomerClient()->getCustomer();
-
-        if (!$customerTransfer || !$customerTransfer->getCompanyUserTransfer()) {
-            return $this->redirectResponseInternal(static::ROUTE_CHECKOUT_SUMMARY);
+        if (!$customerTransfer?->getCompanyUserTransfer()) {
+            return $response;
         }
-
-        $idCompanyBusinessUnit = $customerTransfer->getCompanyUserTransfer()->getFkCompanyBusinessUnitOrFail();
 
         $quoteTransfer = $this->getFactory()->getQuoteClient()->getQuote();
-        $currencyIsoCode = $quoteTransfer->getCurrency() ? $quoteTransfer->getCurrencyOrFail()->getCode() ?? '' : '';
+        $form = $this->getFactory()->createCostCenterSelectorForm($quoteTransfer);
+        $form->handleRequest($request);
 
-        // Security check: ensure cost center belongs to the current user's business unit and has an active budget for the quote currency
-        $costCenterCollection = $this->getFactory()
-            ->getPurchasingControlClient()
-            ->getActiveCostCentersForCompanyBusinessUnit($idCompanyBusinessUnit, $currencyIsoCode);
+        if (!$form->isSubmitted()) {
+            return $response;
+        }
 
-        $isAuthorized = false;
-        foreach ($costCenterCollection->getCostCenters() as $costCenter) {
-            if ($costCenter->getIdCostCenter() === $idCostCenter) {
-                $isAuthorized = true;
-
-                break;
+        if (!$form->isValid()) {
+            /** @var \Symfony\Component\Form\FormError $formError */
+            foreach ($form->getErrors(true) as $formError) {
+                $this->addErrorMessage($formError->getMessage());
             }
+
+            return $response;
         }
 
-        if (!$isAuthorized) {
-            return $this->redirectResponseInternal(static::ROUTE_CHECKOUT_SUMMARY);
+        $responseTransfer = $this->getFactory()
+            ->getPurchasingControlClient()
+            ->updateQuoteCostCenter($this->buildUpdateRequest($quoteTransfer, $form));
+
+        if (!$responseTransfer->getIsSuccessful()) {
+            $this->addErrorMessages($responseTransfer);
+
+            return $response;
         }
 
-        if ($quoteTransfer->getIdCostCenter() !== $idCostCenter) {
-            $idBudget = null;
-        }
+        $this->updateSessionQuote($quoteTransfer, $responseTransfer);
 
-        if (!$idBudget && $idCostCenter > 0) {
-            $idBudget = $this->resolveFirstActiveBudgetId($idCostCenter, $currencyIsoCode);
-        }
-
-        $quoteTransfer->setIdCostCenter($idCostCenter ?: null);
-        $quoteTransfer->setIdBudget($idBudget ?: null);
-
-        $this->getFactory()->getQuoteClient()->setQuote($quoteTransfer);
-
-        return $this->redirectResponseInternal(static::ROUTE_CHECKOUT_SUMMARY);
+        return $response;
     }
 
-    protected function resolveFirstActiveBudgetId(int $idCostCenter, string $currencyIsoCode): int
+    protected function buildUpdateRequest(QuoteTransfer $quoteTransfer, FormInterface $form): CostCenterQuoteUpdateRequestTransfer
     {
-        $budgetCollection = $this->getFactory()
-            ->getPurchasingControlClient()
-            ->getActiveBudgetsForCostCenter($idCostCenter, $currencyIsoCode);
+        $formData = $form->getData();
 
-        $firstBudget = $budgetCollection->getBudgets()->getIterator()->current();
+        return (new CostCenterQuoteUpdateRequestTransfer())
+            ->setIdQuote($quoteTransfer->getIdQuoteOrFail())
+            ->setIdCostCenter($formData[CostCenterSelectorForm::FIELD_ID_COST_CENTER])
+            ->setIdBudget($quoteTransfer->getIdCostCenter() !== $formData[CostCenterSelectorForm::FIELD_ID_COST_CENTER] ? null : $formData[CostCenterSelectorForm::FIELD_ID_BUDGET])
+            ->setCustomer($this->getFactory()->getCustomerClient()->getCustomer());
+    }
 
-        return $firstBudget ? $firstBudget->getIdBudgetOrFail() : 0;
+    protected function addErrorMessages(CostCenterQuoteUpdateResponseTransfer $responseTransfer): void
+    {
+        foreach ($responseTransfer->getErrors() as $errorTransfer) {
+            $this->addErrorMessage($errorTransfer->getMessageOrFail());
+        }
+    }
+
+    protected function updateSessionQuote(QuoteTransfer $quoteTransfer, CostCenterQuoteUpdateResponseTransfer $responseTransfer): void
+    {
+        $quoteTransfer->fromArray($responseTransfer->getQuoteOrFail()->modifiedToArray(), true);
+        $this->getFactory()->getQuoteClient()->setQuote($quoteTransfer);
     }
 }

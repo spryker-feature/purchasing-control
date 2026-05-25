@@ -8,7 +8,15 @@
 namespace SprykerFeatureTest\Zed\PurchasingControl\Business;
 
 use Codeception\Test\Unit;
+use Generated\Shared\Transfer\BudgetCollectionRequestTransfer;
+use Generated\Shared\Transfer\CompanyBusinessUnitTransfer;
+use Generated\Shared\Transfer\CostCenterCollectionRequestTransfer;
+use Generated\Shared\Transfer\CostCenterConditionsTransfer;
 use Generated\Shared\Transfer\CostCenterCriteriaTransfer;
+use Generated\Shared\Transfer\CostCenterTransfer;
+use Orm\Zed\PurchasingControl\Persistence\SpyBudgetQuery;
+use Orm\Zed\PurchasingControl\Persistence\SpyCostCenterQuery;
+use SprykerFeature\Shared\PurchasingControl\PurchasingControlConfig as SharedPurchasingControlConfig;
 use SprykerFeatureTest\Zed\PurchasingControl\PurchasingControlBusinessTester;
 
 /**
@@ -20,43 +28,110 @@ use SprykerFeatureTest\Zed\PurchasingControl\PurchasingControlBusinessTester;
  */
 class PurchasingControlFacadeTest extends Unit
 {
+    /**
+     * @uses \SprykerFeature\Zed\PurchasingControl\Business\Budget\BudgetValidator::GLOSSARY_KEY_VALIDATION_AMOUNT_INVALID
+     */
+    protected const string GLOSSARY_KEY_BUDGET_AMOUNT_INVALID = 'purchasing_control.budget.validation.amount_invalid';
+
+    /**
+     * @uses \SprykerFeature\Zed\PurchasingControl\Business\Budget\BudgetValidator::GLOSSARY_KEY_VALIDATION_CURRENCY_INVALID
+     */
+    protected const string GLOSSARY_KEY_BUDGET_CURRENCY_INVALID = 'purchasing_control.budget.validation.currency_invalid';
+
+    /**
+     * @uses \SprykerFeature\Zed\PurchasingControl\Business\Budget\BudgetValidator::GLOSSARY_KEY_VALIDATION_DATE_RANGE_INVALID
+     */
+    protected const string GLOSSARY_KEY_BUDGET_DATE_RANGE_INVALID = 'purchasing_control.budget.validation.date_range_invalid';
+
+    /**
+     * @uses \SprykerFeature\Zed\PurchasingControl\Business\CostCenter\CostCenterValidator::GLOSSARY_KEY_VALIDATION_NAME_EMPTY
+     */
+    protected const string GLOSSARY_KEY_COST_CENTER_NAME_EMPTY = 'purchasing_control.cost_center.validation.name_empty';
+
+    /**
+     * @uses \SprykerFeature\Zed\PurchasingControl\Business\CostCenter\CostCenterValidator::GLOSSARY_KEY_VALIDATION_BUSINESS_UNIT_EMPTY
+     */
+    protected const string GLOSSARY_KEY_COST_CENTER_BUSINESS_UNIT_EMPTY = 'purchasing_control.cost_center.validation.business_unit_empty';
+
+    protected const string COMPANY_BUSINESS_UNIT = 'companyBusinessUnit';
+
     protected PurchasingControlBusinessTester $tester;
 
-    public function testCreateCostCenterPersistsCostCenter(): void
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->tester->ensurePurchasingControlTablesAreEmpty();
+    }
+
+    public function testCreateCostCenterCollectionPersistsCostCenter(): void
     {
         $costCenterTransfer = $this->tester->buildCostCenterTransfer();
 
-        $costCenterResponseTransfer = $this->tester->getFacade()->createCostCenter($costCenterTransfer);
+        $response = $this->tester->getFacade()->createCostCenterCollection(
+            (new CostCenterCollectionRequestTransfer())
+                ->setIsTransactional(true)
+                ->addCostCenter($costCenterTransfer),
+        );
 
-        $this->assertTrue($costCenterResponseTransfer->getIsSuccessful());
-        $this->assertNotNull($costCenterResponseTransfer->getCostCenter()->getIdCostCenter());
-        $this->assertSame($costCenterTransfer->getName(), $costCenterResponseTransfer->getCostCenter()->getName());
+        $this->assertEmpty($response->getErrors());
+        $savedTransfer = $response->getCostCenters()->getIterator()->current();
+        $this->assertNotNull($savedTransfer->getIdCostCenter());
+        $this->assertSame($costCenterTransfer->getName(), $savedTransfer->getName());
     }
 
-    public function testUpdateCostCenterChangesName(): void
+    public function testCreateCostCenterCollectionReturnsErrorWhenNameIsEmpty(): void
+    {
+        $costCenterTransfer = $this->tester->buildCostCenterTransfer(['name' => '']);
+
+        $response = $this->tester->getFacade()->createCostCenterCollection(
+            (new CostCenterCollectionRequestTransfer())
+                ->setIsTransactional(true)
+                ->addCostCenter($costCenterTransfer),
+        );
+
+        $this->assertNotEmpty($response->getErrors());
+    }
+
+    public function testUpdateCostCenterCollectionChangesName(): void
     {
         $costCenterTransfer = $this->tester->haveCostCenter();
         $costCenterTransfer->setName('Updated Name');
 
-        $costCenterResponseTransfer = $this->tester->getFacade()->updateCostCenter($costCenterTransfer);
+        $response = $this->tester->getFacade()->updateCostCenterCollection(
+            (new CostCenterCollectionRequestTransfer())
+                ->setIsTransactional(true)
+                ->addCostCenter($costCenterTransfer),
+        );
 
-        $this->assertTrue($costCenterResponseTransfer->getIsSuccessful());
-        $this->assertSame('Updated Name', $costCenterResponseTransfer->getCostCenter()->getName());
+        $this->assertEmpty($response->getErrors());
+        $this->assertSame('Updated Name', $response->getCostCenters()->getIterator()->current()->getName());
     }
 
     public function testGetCostCenterCollectionFiltersByBusinessUnit(): void
     {
-        $idCompanyBusinessUnit = $this->tester->haveCompanyBusinessUnit()->getIdCompanyBusinessUnitOrFail();
-        $this->tester->haveCostCenter(['idCompanyBusinessUnit' => $idCompanyBusinessUnit]);
-        $this->tester->haveCostCenter(['idCompanyBusinessUnit' => $this->tester->haveCompanyBusinessUnit()->getIdCompanyBusinessUnitOrFail()]);
+        $companyTransfer = $this->tester->haveCompany();
+        $companyBusinessUnitTransfer = $this->tester->haveCompanyBusinessUnit([
+            CompanyBusinessUnitTransfer::FK_COMPANY => $companyTransfer->getIdCompany(),
+            CompanyBusinessUnitTransfer::COMPANY => $companyTransfer,
+        ]);
 
-        $criteriaTransfer = (new CostCenterCriteriaTransfer())
-            ->addIdCompanyBusinessUnit($idCompanyBusinessUnit);
+        $this->tester->haveCostCenter([static::COMPANY_BUSINESS_UNIT => $companyBusinessUnitTransfer]);
+        $this->tester->haveCostCenter();
 
-        $collection = $this->tester->getFacade()->getCostCenterCollection($criteriaTransfer);
+        $collection = $this->tester->getFacade()->getCostCenterCollection(
+            (new CostCenterCriteriaTransfer())->setCostCenterConditions(
+                (new CostCenterConditionsTransfer())->addIdCompanyBusinessUnit(
+                    $companyBusinessUnitTransfer->getIdCompanyBusinessUnitOrFail(),
+                ),
+            ),
+        );
 
         $this->assertCount(1, $collection->getCostCenters());
-        $this->assertContains($idCompanyBusinessUnit, $collection->getCostCenters()->offsetGet(0)->getCompanyBusinessUnitIds());
+        $this->assertContains(
+            $companyBusinessUnitTransfer->getIdCompanyBusinessUnitOrFail(),
+            $collection->getCostCenters()->offsetGet(0)->getCompanyBusinessUnitIds(),
+        );
     }
 
     public function testGetCostCenterCollectionFiltersByIsActive(): void
@@ -64,95 +139,299 @@ class PurchasingControlFacadeTest extends Unit
         $this->tester->haveCostCenter(['isActive' => true]);
         $this->tester->haveCostCenter(['isActive' => false]);
 
-        $criteriaTransfer = (new CostCenterCriteriaTransfer())->setIsActive(true);
-
-        $collection = $this->tester->getFacade()->getCostCenterCollection($criteriaTransfer);
+        $collection = $this->tester->getFacade()->getCostCenterCollection(
+            (new CostCenterCriteriaTransfer())->setCostCenterConditions(
+                (new CostCenterConditionsTransfer())->setIsActive(true),
+            ),
+        );
 
         foreach ($collection->getCostCenters() as $costCenter) {
             $this->assertTrue($costCenter->getIsActive());
         }
     }
 
-    public function testCreateBudgetPersistsBudget(): void
+    public function testCreateBudgetCollectionPersistsBudget(): void
     {
         $costCenter = $this->tester->haveCostCenter();
         $budgetTransfer = $this->tester->buildBudgetTransfer($costCenter->getIdCostCenterOrFail());
 
-        $budgetResponseTransfer = $this->tester->getFacade()->createBudget($budgetTransfer);
+        $response = $this->tester->getFacade()->createBudgetCollection(
+            (new BudgetCollectionRequestTransfer())
+                ->setIsTransactional(true)
+                ->addBudget($budgetTransfer),
+        );
 
-        $this->assertTrue($budgetResponseTransfer->getIsSuccessful());
-        $this->assertNotNull($budgetResponseTransfer->getBudget()->getIdBudget());
-        $this->assertSame($budgetTransfer->getName(), $budgetResponseTransfer->getBudget()->getName());
+        $this->assertEmpty($response->getErrors());
+        $savedBudget = $response->getBudgets()->getIterator()->current();
+        $this->assertNotNull($savedBudget->getIdBudget());
+        $this->assertSame($budgetTransfer->getName(), $savedBudget->getName());
     }
 
-    public function testUpdateBudgetChangesEnforcementRule(): void
+    public function testUpdateBudgetCollectionChangesEnforcementRule(): void
     {
         $costCenter = $this->tester->haveCostCenter();
         $budgetTransfer = $this->tester->haveBudget($costCenter->getIdCostCenterOrFail());
+        $budgetTransfer->setEnforcementRule(SharedPurchasingControlConfig::ENFORCEMENT_RULE_WARN);
 
-        $budgetTransfer->setEnforcementRule('warn');
-
-        $budgetResponseTransfer = $this->tester->getFacade()->updateBudget($budgetTransfer);
-
-        $this->assertTrue($budgetResponseTransfer->getIsSuccessful());
-        $this->assertSame('warn', $budgetResponseTransfer->getBudget()->getEnforcementRule());
-    }
-
-    public function testGetActiveBudgetsFiltersExpiredBudgets(): void
-    {
-        $costCenter = $this->tester->haveCostCenter();
-
-        // Expired budget (ends in the past)
-        $this->tester->haveBudget($costCenter->getIdCostCenterOrFail(), [
-            'startsAt' => '2020-01-01',
-            'endsAt' => '2020-12-31',
-            'currencyIsoCode' => 'EUR',
-            'isActive' => true,
-        ]);
-
-        $collection = $this->tester->getFacade()->getActiveBudgetsForCostCenter(
-            $costCenter->getIdCostCenterOrFail(),
-            'EUR',
+        $response = $this->tester->getFacade()->updateBudgetCollection(
+            (new BudgetCollectionRequestTransfer())
+                ->setIsTransactional(true)
+                ->addBudget($budgetTransfer),
         );
 
-        $this->assertCount(0, $collection->getBudgets());
+        $this->assertEmpty($response->getErrors());
+        $this->assertSame(
+            SharedPurchasingControlConfig::ENFORCEMENT_RULE_WARN,
+            $response->getBudgets()->getIterator()->current()->getEnforcementRule(),
+        );
     }
 
-    public function testGetActiveBudgetsFiltersInactiveBudgets(): void
+    public function testCreateCostCenterCollectionTransactionalModeSkipsAllWhenAnyItemIsInvalid(): void
     {
-        $costCenter = $this->tester->haveCostCenter();
+        $validTransfer = $this->tester->buildCostCenterTransfer();
+        $invalidTransfer = $this->tester->buildCostCenterTransfer(['name' => '']);
 
-        $this->tester->haveBudget($costCenter->getIdCostCenterOrFail(), [
-            'startsAt' => date('Y-m-d', strtotime('-10 days')),
-            'endsAt' => date('Y-m-d', strtotime('+10 days')),
-            'currencyIsoCode' => 'EUR',
-            'isActive' => false,
-        ]);
-
-        $collection = $this->tester->getFacade()->getActiveBudgetsForCostCenter(
-            $costCenter->getIdCostCenterOrFail(),
-            'EUR',
+        $response = $this->tester->getFacade()->createCostCenterCollection(
+            (new CostCenterCollectionRequestTransfer())
+                ->setIsTransactional(true)
+                ->addCostCenter($validTransfer)
+                ->addCostCenter($invalidTransfer),
         );
 
-        $this->assertCount(0, $collection->getBudgets());
+        $this->assertCount(1, $response->getErrors());
+        $this->assertCount(2, $response->getCostCenters());
+        $this->assertSame(0, SpyCostCenterQuery::create()->count());
     }
 
-    public function testGetActiveBudgetsFiltersByCurrency(): void
+    public function testCreateCostCenterCollectionNonTransactionalModePersistsValidItems(): void
     {
-        $costCenter = $this->tester->haveCostCenter();
+        $validTransfer = $this->tester->buildCostCenterTransfer();
+        $invalidTransfer = $this->tester->buildCostCenterTransfer(['name' => '']);
 
-        $this->tester->haveBudget($costCenter->getIdCostCenterOrFail(), [
-            'startsAt' => date('Y-m-d', strtotime('-10 days')),
-            'endsAt' => date('Y-m-d', strtotime('+10 days')),
-            'currencyIsoCode' => 'USD',
-            'isActive' => true,
-        ]);
-
-        $collection = $this->tester->getFacade()->getActiveBudgetsForCostCenter(
-            $costCenter->getIdCostCenterOrFail(),
-            'EUR',
+        $response = $this->tester->getFacade()->createCostCenterCollection(
+            (new CostCenterCollectionRequestTransfer())
+                ->setIsTransactional(false)
+                ->addCostCenter($validTransfer)
+                ->addCostCenter($invalidTransfer),
         );
 
-        $this->assertCount(0, $collection->getBudgets());
+        $this->assertCount(1, $response->getErrors());
+        $this->assertCount(2, $response->getCostCenters());
+        $this->assertSame(1, SpyCostCenterQuery::create()->count());
+
+        $persistedTransfers = array_values(iterator_to_array($response->getCostCenters()));
+        $this->assertNotNull($persistedTransfers[0]->getIdCostCenter());
+        $this->assertNull($persistedTransfers[1]->getIdCostCenter());
+    }
+
+    public function testUpdateCostCenterCollectionTransactionalModeSkipsAllWhenAnyItemIsInvalid(): void
+    {
+        $firstTransfer = $this->tester->haveCostCenter(['name' => 'Original A']);
+        $secondTransfer = $this->tester->haveCostCenter(['name' => 'Original B']);
+        $secondTransfer->setName('');
+
+        $this->tester->getFacade()->updateCostCenterCollection(
+            (new CostCenterCollectionRequestTransfer())
+                ->setIsTransactional(true)
+                ->addCostCenter($firstTransfer->setName('Changed A'))
+                ->addCostCenter($secondTransfer),
+        );
+
+        $this->assertSame(
+            'Original A',
+            SpyCostCenterQuery::create()->findPk($firstTransfer->getIdCostCenterOrFail())->getName(),
+        );
+    }
+
+    public function testUpdateCostCenterCollectionNonTransactionalModePersistsValidItems(): void
+    {
+        $firstTransfer = $this->tester->haveCostCenter(['name' => 'Original A']);
+        $secondTransfer = $this->tester->haveCostCenter(['name' => 'Original B']);
+
+        $response = $this->tester->getFacade()->updateCostCenterCollection(
+            (new CostCenterCollectionRequestTransfer())
+                ->setIsTransactional(false)
+                ->addCostCenter($firstTransfer->setName('Updated A'))
+                ->addCostCenter($secondTransfer->setName('')),
+        );
+
+        $this->assertCount(1, $response->getErrors());
+        $this->assertSame(
+            'Updated A',
+            SpyCostCenterQuery::create()->findPk($firstTransfer->getIdCostCenterOrFail())->getName(),
+        );
+        $this->assertSame(
+            'Original B',
+            SpyCostCenterQuery::create()->findPk($secondTransfer->getIdCostCenterOrFail())->getName(),
+        );
+    }
+
+    public function testCreateBudgetCollectionTransactionalModeSkipsAllWhenAnyItemIsInvalid(): void
+    {
+        $costCenter = $this->tester->haveCostCenter();
+        $idCostCenter = $costCenter->getIdCostCenterOrFail();
+
+        $validBudget = $this->tester->buildBudgetTransfer($idCostCenter);
+        $invalidBudget = $this->tester->buildBudgetTransfer($idCostCenter, ['amount' => 0]);
+
+        $response = $this->tester->getFacade()->createBudgetCollection(
+            (new BudgetCollectionRequestTransfer())
+                ->setIsTransactional(true)
+                ->addBudget($validBudget)
+                ->addBudget($invalidBudget),
+        );
+
+        $this->assertNotEmpty($response->getErrors());
+        $this->assertCount(2, $response->getBudgets());
+        $this->assertSame(0, SpyBudgetQuery::create()->count());
+    }
+
+    public function testCreateBudgetCollectionNonTransactionalModePersistsValidBudgets(): void
+    {
+        $costCenter = $this->tester->haveCostCenter();
+        $idCostCenter = $costCenter->getIdCostCenterOrFail();
+
+        $validBudget = $this->tester->buildBudgetTransfer($idCostCenter);
+        $invalidBudget = $this->tester->buildBudgetTransfer($idCostCenter, ['amount' => 0]);
+
+        $response = $this->tester->getFacade()->createBudgetCollection(
+            (new BudgetCollectionRequestTransfer())
+                ->setIsTransactional(false)
+                ->addBudget($validBudget)
+                ->addBudget($invalidBudget),
+        );
+
+        $this->assertNotEmpty($response->getErrors());
+        $this->assertCount(2, $response->getBudgets());
+        $this->assertSame(1, SpyBudgetQuery::create()->count());
+
+        $persistedBudgets = array_values(iterator_to_array($response->getBudgets()));
+        $this->assertNotNull($persistedBudgets[0]->getIdBudget());
+        $this->assertNull($persistedBudgets[1]->getIdBudget());
+    }
+
+    public function testUpdateBudgetCollectionTransactionalModeSkipsAllWhenAnyItemIsInvalid(): void
+    {
+        $costCenter = $this->tester->haveCostCenter();
+        $idCostCenter = $costCenter->getIdCostCenterOrFail();
+
+        $firstBudget = $this->tester->haveBudget($idCostCenter, ['amount' => 1000]);
+        $secondBudget = $this->tester->haveBudget($idCostCenter, ['amount' => 2000]);
+
+        $this->tester->getFacade()->updateBudgetCollection(
+            (new BudgetCollectionRequestTransfer())
+                ->setIsTransactional(true)
+                ->addBudget($firstBudget->setAmount(9999))
+                ->addBudget($secondBudget->setAmount(0)),
+        );
+
+        $this->assertSame(
+            1000,
+            (int)SpyBudgetQuery::create()->findPk($firstBudget->getIdBudgetOrFail())->getAmount(),
+        );
+    }
+
+    public function testUpdateBudgetCollectionNonTransactionalModePersistsValidBudgets(): void
+    {
+        $costCenter = $this->tester->haveCostCenter();
+        $idCostCenter = $costCenter->getIdCostCenterOrFail();
+
+        $firstBudget = $this->tester->haveBudget($idCostCenter, ['amount' => 1000]);
+        $secondBudget = $this->tester->haveBudget($idCostCenter, ['amount' => 2000]);
+
+        $response = $this->tester->getFacade()->updateBudgetCollection(
+            (new BudgetCollectionRequestTransfer())
+                ->setIsTransactional(false)
+                ->addBudget($firstBudget->setAmount(9999))
+                ->addBudget($secondBudget->setAmount(0)),
+        );
+
+        $this->assertNotEmpty($response->getErrors());
+        $this->assertSame(
+            9999,
+            (int)SpyBudgetQuery::create()->findPk($firstBudget->getIdBudgetOrFail())->getAmount(),
+        );
+        $this->assertSame(
+            2000,
+            (int)SpyBudgetQuery::create()->findPk($secondBudget->getIdBudgetOrFail())->getAmount(),
+        );
+    }
+
+    public function testCreateBudgetCollectionReturnsAmountInvalidGlossaryKey(): void
+    {
+        $costCenter = $this->tester->haveCostCenter();
+        $invalidBudget = $this->tester->buildBudgetTransfer($costCenter->getIdCostCenterOrFail(), ['amount' => 0]);
+
+        $response = $this->tester->getFacade()->createBudgetCollection(
+            (new BudgetCollectionRequestTransfer())->setIsTransactional(true)->addBudget($invalidBudget),
+        );
+
+        $this->assertSame(
+            static::GLOSSARY_KEY_BUDGET_AMOUNT_INVALID,
+            $response->getErrors()->getIterator()->current()->getMessage(),
+        );
+    }
+
+    public function testCreateBudgetCollectionReturnsCurrencyInvalidGlossaryKey(): void
+    {
+        $costCenter = $this->tester->haveCostCenter();
+        $invalidBudget = $this->tester->buildBudgetTransfer($costCenter->getIdCostCenterOrFail(), ['currencyIsoCode' => 'EU']);
+
+        $response = $this->tester->getFacade()->createBudgetCollection(
+            (new BudgetCollectionRequestTransfer())->setIsTransactional(true)->addBudget($invalidBudget),
+        );
+
+        $this->assertSame(
+            static::GLOSSARY_KEY_BUDGET_CURRENCY_INVALID,
+            $response->getErrors()->getIterator()->current()->getMessage(),
+        );
+    }
+
+    public function testCreateBudgetCollectionReturnsDateRangeInvalidGlossaryKey(): void
+    {
+        $costCenter = $this->tester->haveCostCenter();
+        $invalidBudget = $this->tester->buildBudgetTransfer($costCenter->getIdCostCenterOrFail(), [
+            'startsAt' => date('Y-m-d', strtotime('+10 days')),
+            'endsAt' => date('Y-m-d', strtotime('-10 days')),
+        ]);
+
+        $response = $this->tester->getFacade()->createBudgetCollection(
+            (new BudgetCollectionRequestTransfer())->setIsTransactional(true)->addBudget($invalidBudget),
+        );
+
+        $this->assertSame(
+            static::GLOSSARY_KEY_BUDGET_DATE_RANGE_INVALID,
+            $response->getErrors()->getIterator()->current()->getMessage(),
+        );
+    }
+
+    public function testCreateCostCenterCollectionReturnsNameEmptyGlossaryKey(): void
+    {
+        $costCenterTransfer = $this->tester->buildCostCenterTransfer(['name' => '']);
+
+        $response = $this->tester->getFacade()->createCostCenterCollection(
+            (new CostCenterCollectionRequestTransfer())->setIsTransactional(true)->addCostCenter($costCenterTransfer),
+        );
+
+        $this->assertSame(
+            static::GLOSSARY_KEY_COST_CENTER_NAME_EMPTY,
+            $response->getErrors()->getIterator()->current()->getMessage(),
+        );
+    }
+
+    public function testCreateCostCenterCollectionReturnsBusinessUnitEmptyGlossaryKey(): void
+    {
+        $costCenterTransfer = (new CostCenterTransfer())
+            ->setName('Valid Name')
+            ->setIsActive(true);
+
+        $response = $this->tester->getFacade()->createCostCenterCollection(
+            (new CostCenterCollectionRequestTransfer())->setIsTransactional(true)->addCostCenter($costCenterTransfer),
+        );
+
+        $this->assertSame(
+            static::GLOSSARY_KEY_COST_CENTER_BUSINESS_UNIT_EMPTY,
+            $response->getErrors()->getIterator()->current()->getMessage(),
+        );
     }
 }

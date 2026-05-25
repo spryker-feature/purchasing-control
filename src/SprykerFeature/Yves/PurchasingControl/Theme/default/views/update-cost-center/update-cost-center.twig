@@ -1,0 +1,22 @@
+{% extends template('page-layout-company', 'CompanyPage') %}
+
+{% define data = {
+    form: _view.form,
+    costCenter: _view.costCenter,
+    title: 'purchasing_control.cost_center.update.title' | trans,
+    activePage: 'cost-center',
+    currentBreadcrumb: 'purchasing_control.cost_center.update.title',
+} %}
+
+{% block companyContent %}
+    <div class="box">
+        {% block form %}
+            {% include molecule('cost-center-form', 'PurchasingControl') with {
+                data: {
+                    form: data.form,
+                    formAction: url('company/cost-center/update', { costCenterUuid: data.costCenter.uuid }),
+                },
+            } only %}
+        {% endblock %}
+    </div>
+{% endblock %}

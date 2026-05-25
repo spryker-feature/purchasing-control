@@ -7,67 +7,45 @@
 
 namespace SprykerFeature\Yves\PurchasingControl\Widget;
 
-use ArrayObject;
 use Generated\Shared\Transfer\BudgetTransfer;
 use Generated\Shared\Transfer\CostCenterTransfer;
 use Generated\Shared\Transfer\QuoteTransfer;
 use Spryker\Yves\Kernel\Widget\AbstractWidget;
+use SprykerFeature\Yves\PurchasingControl\Form\DataProvider\CostCenterSelectorFormDataProvider;
+use Symfony\Component\Form\FormView;
 
 /**
  * @method \SprykerFeature\Yves\PurchasingControl\PurchasingControlFactory getFactory()
  */
 class CostCenterSelectorWidget extends AbstractWidget
 {
-    protected const string PARAMETER_COST_CENTERS = 'costCenters';
+    protected const string PARAMETER_FORM = 'form';
+
+    protected const string PARAMETER_IS_LOCKED = 'isLocked';
 
     protected const string PARAMETER_SELECTED_COST_CENTER = 'selectedCostCenter';
-
-    protected const string PARAMETER_BUDGETS = 'budgets';
 
     protected const string PARAMETER_SELECTED_BUDGET = 'selectedBudget';
 
     protected const string PARAMETER_QUOTE = 'quote';
 
-    protected const string PARAMETER_IS_LOCKED = 'isLocked';
-
     public function __construct(QuoteTransfer $quoteTransfer)
     {
-        $this->addParameter(static::PARAMETER_QUOTE, $quoteTransfer);
-        $this->addParameter(static::PARAMETER_IS_LOCKED, $this->isQuoteInApprovalProcess($quoteTransfer));
+        $dataProvider = $this->getFactory()->createCostCenterSelectorFormDataProvider();
 
-        $customerTransfer = $this->getFactory()->getCustomerClient()->getCustomer();
+        /** @var array{data: array<string, mixed>, options: array<string, mixed>, selectedCostCenter: \Generated\Shared\Transfer\CostCenterTransfer|null, selectedBudget: \Generated\Shared\Transfer\BudgetTransfer|null} $dataAndOptions */
+        $dataAndOptions = $dataProvider->getDataAndOptions($quoteTransfer);
 
-        if (!$customerTransfer || !$customerTransfer->getCompanyUserTransfer()) {
-            $this->addEmptyParameters();
+        $form = $this->getFactory()->createCostCenterSelectorFormFromDataAndOptions(
+            $dataAndOptions[CostCenterSelectorFormDataProvider::KEY_DATA],
+            $dataAndOptions[CostCenterSelectorFormDataProvider::KEY_OPTIONS],
+        );
 
-            return;
-        }
-
-        $idCompanyBusinessUnit = $customerTransfer->getCompanyUserTransfer()->getFkCompanyBusinessUnitOrFail();
-        $currencyIsoCode = $quoteTransfer->getCurrency() ? $quoteTransfer->getCurrencyOrFail()->getCode() ?? '' : '';
-
-        $costCenters = $this->getFactory()
-            ->getPurchasingControlClient()
-            ->getActiveCostCentersForCompanyBusinessUnit($idCompanyBusinessUnit, $currencyIsoCode)
-            ->getCostCenters();
-
-        $selectedCostCenter = $this->resolveSelectedCostCenter($costCenters, $quoteTransfer->getIdCostCenter());
-        $budgets = new ArrayObject();
-        $selectedBudget = null;
-
-        if ($selectedCostCenter) {
-            $budgets = $this->getFactory()
-                ->getPurchasingControlClient()
-                ->getActiveBudgetsForCostCenter($selectedCostCenter->getIdCostCenterOrFail(), $currencyIsoCode)
-                ->getBudgets();
-
-            $selectedBudget = $this->resolveSelectedBudget($budgets, $quoteTransfer->getIdBudget());
-        }
-
-        $this->addParameter(static::PARAMETER_COST_CENTERS, $costCenters);
-        $this->addParameter(static::PARAMETER_SELECTED_COST_CENTER, $selectedCostCenter);
-        $this->addParameter(static::PARAMETER_BUDGETS, $budgets);
-        $this->addParameter(static::PARAMETER_SELECTED_BUDGET, $selectedBudget);
+        $this->addFormParameter($form->createView());
+        $this->addIsLockedParameter($quoteTransfer);
+        $this->addSelectedCostCenterParameter($dataAndOptions[CostCenterSelectorFormDataProvider::KEY_SELECTED_COST_CENTER]);
+        $this->addSelectedBudgetParameter($dataAndOptions[CostCenterSelectorFormDataProvider::KEY_SELECTED_BUDGET]);
+        $this->addQuoteParameter($quoteTransfer);
     }
 
     public static function getName(): string
@@ -77,67 +55,36 @@ class CostCenterSelectorWidget extends AbstractWidget
 
     public static function getTemplate(): string
     {
-        return '@PurchasingControl/components/molecules/cost-center-selector/cost-center-selector.twig';
+        return '@PurchasingControl/views/cost-center-selector/cost-center-selector.twig';
     }
 
-    /**
-     * @param \ArrayObject<int, \Generated\Shared\Transfer\CostCenterTransfer> $costCenters
-     */
-    protected function resolveSelectedCostCenter(ArrayObject $costCenters, ?int $idCostCenter): ?CostCenterTransfer
+    protected function addFormParameter(FormView $form): void
     {
-        if ($costCenters->count() === 1) {
-            return $costCenters[0];
-        }
-
-        if (!$idCostCenter) {
-            return null;
-        }
-
-        foreach ($costCenters as $costCenter) {
-            if ($costCenter->getIdCostCenter() === $idCostCenter) {
-                return $costCenter;
-            }
-        }
-
-        return null;
+        $this->addParameter(static::PARAMETER_FORM, $form);
     }
 
-    /**
-     * @param \ArrayObject<int, \Generated\Shared\Transfer\BudgetTransfer> $budgets
-     */
-    protected function resolveSelectedBudget(ArrayObject $budgets, ?int $idBudget): ?BudgetTransfer
+    protected function addIsLockedParameter(QuoteTransfer $quoteTransfer): void
     {
-        if ($budgets->count() === 1) {
-            return $budgets[0];
-        }
-
-        if (!$idBudget) {
-            return null;
-        }
-
-        foreach ($budgets as $budget) {
-            if ($budget->getIdBudget() === $idBudget) {
-                return $budget;
-            }
-        }
-
-        return null;
+        $this->addParameter(static::PARAMETER_IS_LOCKED, $this->isQuoteInApprovalProcess($quoteTransfer));
     }
 
-    protected function addEmptyParameters(): void
+    protected function addSelectedCostCenterParameter(?CostCenterTransfer $selectedCostCenterTransfer): void
     {
-        $this->addParameter(static::PARAMETER_COST_CENTERS, new ArrayObject());
-        $this->addParameter(static::PARAMETER_SELECTED_COST_CENTER, null);
-        $this->addParameter(static::PARAMETER_BUDGETS, new ArrayObject());
-        $this->addParameter(static::PARAMETER_SELECTED_BUDGET, null);
+        $this->addParameter(static::PARAMETER_SELECTED_COST_CENTER, $selectedCostCenterTransfer);
+    }
+
+    protected function addSelectedBudgetParameter(?BudgetTransfer $selectedBudgetTransfer): void
+    {
+        $this->addParameter(static::PARAMETER_SELECTED_BUDGET, $selectedBudgetTransfer);
+    }
+
+    protected function addQuoteParameter(QuoteTransfer $quoteTransfer): void
+    {
+        $this->addParameter(static::PARAMETER_QUOTE, $quoteTransfer);
     }
 
     protected function isQuoteInApprovalProcess(QuoteTransfer $quoteTransfer): bool
     {
-        if ($quoteTransfer->getIsLocked()) {
-            return true;
-        }
-
-        return false;
+        return $quoteTransfer->getIsLocked() === true;
     }
 }

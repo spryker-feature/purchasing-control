@@ -26,3 +26,7 @@ suites:
                 - \SprykerTest\Zed\Testify\Helper\BusinessHelper
                 - \SprykerTest\Shared\Testify\Helper\DependencyHelper
                 - \SprykerTest\Shared\Propel\Helper\PropelInstallHelper
+                - \SprykerTest\Shared\Testify\Helper\ConfigHelper
+                - \SprykerTest\Zed\CompanyBusinessUnit\Helper\CompanyBusinessUnitHelper
+                - \SprykerFeatureTest\Shared\PurchasingControl\Helper\PurchasingControlHelper
+                - \SprykerTest\Zed\Company\Helper\CompanyHelper
