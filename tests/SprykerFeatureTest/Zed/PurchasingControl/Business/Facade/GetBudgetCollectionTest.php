@@ -263,7 +263,7 @@ class GetBudgetCollectionTest extends Unit
 
         $budgetCriteriaTransfer = (new BudgetCriteriaTransfer())
             ->setBudgetConditions(
-                (new BudgetConditionsTransfer())->addIdCostCenter(PHP_INT_MAX),
+                (new BudgetConditionsTransfer())->addIdCostCenter(2147483647),
             );
 
         // Act

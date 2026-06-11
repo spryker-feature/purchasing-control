@@ -310,7 +310,7 @@ class GetCostCenterCollectionTest extends Unit
     {
         // Arrange
         $this->tester->haveCostCenter();
-        $nonExistentBusinessUnitId = PHP_INT_MAX;
+        $nonExistentBusinessUnitId = 2147483647;
 
         $costCenterCriteriaTransfer = (new CostCenterCriteriaTransfer())
             ->setCostCenterConditions(
