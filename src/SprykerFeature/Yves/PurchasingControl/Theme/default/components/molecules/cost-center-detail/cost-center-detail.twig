@@ -1,0 +1,36 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'cost-center-detail',
+}%}
+
+{% define data = {
+    costCenterName: '',
+    budgetName: '',
+}%}
+
+{% block body %}
+    {% set titleClass = 'title--h5' %}
+    {% block title %}
+        <h5 class="{{ titleClass }}">{{ 'purchasing_control.order.detail.title' | trans }}</h5>
+    {% endblock %}
+
+    {% set listClassName = '' %}
+    {% set listKeyClassName = '' %}
+    {% set listValueClassName = '' %}
+    
+    {% block list %}
+        <dl class="{{ listClassName }}">
+            {% block listItems %}
+                <dt class="{{ listKeyClassName }}">
+                    {{ 'purchasing_control.selector.label' | trans }}:
+                </dt>
+                <dd class="{{ listValueClassName }}">{{ data.costCenterName ?? 'purchasing_control.order.detail.not_available' | trans }}</dd>
+                <dt class="{{ listKeyClassName }}">
+                    {{ 'purchasing_control.budget.selector.label' | trans }}:
+                </dt>
+                <dd class="{{ listValueClassName }}">{{ data.budgetName ?? 'purchasing_control.order.detail.not_available' | trans }}</dd>
+            {% endblock %}
+        </dl>
+    {% endblock %}
+{% endblock %}

@@ -10,6 +10,7 @@ namespace SprykerFeature\Yves\PurchasingControl\Reader;
 use Generated\Shared\Transfer\BudgetConditionsTransfer;
 use Generated\Shared\Transfer\BudgetCriteriaTransfer;
 use Generated\Shared\Transfer\BudgetTransfer;
+use Generated\Shared\Transfer\CostCenterTransfer;
 use SprykerFeature\Client\PurchasingControl\PurchasingControlClientInterface;
 
 class BudgetReader implements BudgetReaderInterface
@@ -38,5 +39,20 @@ class BudgetReader implements BudgetReaderInterface
         );
 
         return $budgetCollectionTransfer->getBudgets()->getIterator()->current() ?: null;
+    }
+
+    public function resolveBudgetName(?CostCenterTransfer $costCenterTransfer, ?int $idBudget): ?string
+    {
+        if ($costCenterTransfer === null || $idBudget === null) {
+            return null;
+        }
+
+        foreach ($costCenterTransfer->getBudgets() as $budgetTransfer) {
+            if ($budgetTransfer->getIdBudget() === $idBudget) {
+                return $budgetTransfer->getName();
+            }
+        }
+
+        return null;
     }
 }

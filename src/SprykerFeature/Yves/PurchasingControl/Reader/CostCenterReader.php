@@ -72,4 +72,21 @@ class CostCenterReader implements CostCenterReaderInterface
 
         return $costCenterCollectionTransfer->getCostCenters()->getIterator()->current() ?: null;
     }
+
+    public function findCostCenterWithBudgets(?int $idCostCenter): ?CostCenterTransfer
+    {
+        if ($idCostCenter === null) {
+            return null;
+        }
+
+        $costCenterCollectionTransfer = $this->purchasingControlClient->getCostCenterCollection(
+            (new CostCenterCriteriaTransfer())->setCostCenterConditions(
+                (new CostCenterConditionsTransfer())
+                    ->addIdCostCenter($idCostCenter)
+                    ->setWithBudgets(true),
+            ),
+        );
+
+        return $costCenterCollectionTransfer->getCostCenters()->getIterator()->current() ?: null;
+    }
 }

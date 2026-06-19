@@ -8,6 +8,7 @@
 namespace SprykerFeature\Yves\PurchasingControl\Reader;
 
 use Generated\Shared\Transfer\BudgetTransfer;
+use Generated\Shared\Transfer\CostCenterTransfer;
 
 interface BudgetReaderInterface
 {
@@ -16,4 +17,6 @@ interface BudgetReaderInterface
      * Returns null if the cost center does not belong to the company or the budget does not exist.
      */
     public function findBudget(string $budgetUuid, string $costCenterUuid, int $idCompany): ?BudgetTransfer;
+
+    public function resolveBudgetName(?CostCenterTransfer $costCenterTransfer, ?int $idBudget): ?string;
 }

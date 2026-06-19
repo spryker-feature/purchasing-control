@@ -1,0 +1,15 @@
+{% extends template('widget') %}
+
+{% define data = {
+    costCenterName: _widget.costCenterName,
+    budgetName: _widget.budgetName,
+} %}
+
+{% block body %}
+    {% include  molecule('cost-center-detail', 'PurchasingControl') with {
+        data: {
+            costCenterName: data.costCenterName,
+            budgetName: data.budgetName,
+        }
+    } only %}
+{% endblock %}
