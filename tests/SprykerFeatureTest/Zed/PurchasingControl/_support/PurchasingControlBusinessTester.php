@@ -28,6 +28,7 @@ use Orm\Zed\Sales\Persistence\SpySalesOrderItem;
 use Orm\Zed\Sales\Persistence\SpySalesShipment;
 use ReflectionProperty;
 use Spryker\Shared\Kernel\BundleConfigMock\BundleConfigMock;
+use Spryker\Shared\Kernel\ClassResolver\AbstractClassResolver;
 use SprykerFeature\Zed\PurchasingControl\Business\PurchasingControlFacadeInterface;
 use SprykerFeature\Zed\PurchasingControl\PurchasingControlConfig;
 
@@ -247,5 +248,17 @@ class PurchasingControlBusinessTester extends Actor
         $mocks = $property->getValue(null) ?? [];
         $mocks[PurchasingControlConfig::class] = $configStub;
         $property->setValue(null, $mocks);
+
+        // Business factories are cached statically across tests and resolve their config lazily on first use.
+        // A factory resolved by an earlier test caches the real (unmocked) config, so the mock registered above
+        // is ignored unless the cached instances are dropped, forcing the next resolution to pick up the mock.
+        $this->resetResolvedInstanceCache();
+    }
+
+    protected function resetResolvedInstanceCache(): void
+    {
+        $property = new ReflectionProperty(AbstractClassResolver::class, 'cachedInstances');
+        $property->setAccessible(true);
+        $property->setValue(null, []);
     }
 }

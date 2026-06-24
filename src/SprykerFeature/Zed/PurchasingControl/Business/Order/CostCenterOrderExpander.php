@@ -44,11 +44,14 @@ class CostCenterOrderExpander implements CostCenterOrderExpanderInterface
                 ),
         );
 
-        $costCenterTransfer = $costCenterCollectionTransfer->getCostCenters()->offsetGet(0);
-        if ($costCenterTransfer !== null) {
-            $costCenterTransfer->setCompany($orderTransfer->getCompanyName());
+        $costCenters = $costCenterCollectionTransfer->getCostCenters();
+        if ($costCenters->count() === 0) {
+            return $orderTransfer;
         }
 
+        $costCenterTransfer = $costCenters->offsetGet(0);
+
+        $costCenterTransfer->setCompany($orderTransfer->getCompanyName());
         $orderTransfer->setCostCenter($costCenterTransfer);
         $idBudget = $orderTransfer->getFkBudget();
         if ($idBudget === null) {
@@ -63,7 +66,10 @@ class CostCenterOrderExpander implements CostCenterOrderExpanderInterface
                         ->setWithBudgetConsumption(false),
                 ),
         );
-        $orderTransfer->setBudget($budgetCollectionTransfer->getBudgets()->offsetGet(0));
+        $budgets = $budgetCollectionTransfer->getBudgets();
+        if ($budgets->count() > 0) {
+            $orderTransfer->setBudget($budgets->offsetGet(0));
+        }
 
         return $orderTransfer;
     }
