@@ -14,6 +14,11 @@ class ManageCostCentersPermissionPlugin extends AbstractPlugin implements Permis
 {
     public const string KEY = 'ManageCostCentersPermissionPlugin';
 
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
     public function getKey(): string
     {
         return static::KEY;

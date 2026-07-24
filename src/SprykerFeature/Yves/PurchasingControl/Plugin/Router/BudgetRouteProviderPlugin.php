@@ -24,6 +24,11 @@ class BudgetRouteProviderPlugin extends AbstractRouteProviderPlugin
 
     protected const string PATTERN_BUDGET_UPDATE = '/company/cost-center/budget/update';
 
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
     public function addRoutes(RouteCollection $routeCollection): RouteCollection
     {
         $routeCollection = $this->addListRoute($routeCollection);

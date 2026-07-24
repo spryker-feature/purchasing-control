@@ -28,6 +28,11 @@ class CostCenterRouteProviderPlugin extends AbstractRouteProviderPlugin
 
     protected const string PATTERN_COST_CENTER_UPDATE = '/company/cost-center/update';
 
+    /**
+     * {@inheritDoc}
+     *
+     * @api
+     */
     public function addRoutes(RouteCollection $routeCollection): RouteCollection
     {
         $routeCollection = $this->addUpdateQuoteRoute($routeCollection);
