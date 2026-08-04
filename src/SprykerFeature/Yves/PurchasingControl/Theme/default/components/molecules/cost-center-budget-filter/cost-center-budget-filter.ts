@@ -4,8 +4,6 @@ export default class CostCenterBudgetFilter extends Component {
     protected costCenterSelect: HTMLSelectElement;
     protected budgetSelect: HTMLSelectElement;
 
-    protected readyCallback() {}
-
     protected init(): void {
         this.costCenterSelect = document.querySelector<HTMLSelectElement>(this.costCenterSelector);
         this.budgetSelect = document.querySelector<HTMLSelectElement>(this.budgetSelector);

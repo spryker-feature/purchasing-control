@@ -6,8 +6,6 @@ export default class CostCenterSelector extends Component {
     protected sourceBudgetFieldValue: string;
     protected applyWarning: HTMLElement;
 
-    protected readyCallback(): void {}
-
     protected init(): void {
         this.budgetField = this.querySelector<HTMLSelectElement>(`.${this.jsName}__budget-control`);
         if (!this.budgetField) {
