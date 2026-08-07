@@ -2,5 +2,8 @@
     "include": {
         "spryker/transfer": "Provides transfer objects definition with strict types and `::get*OrFail()` functionality.",
         "spryker-shop/shop-ui": "Provides the basic template for the purchasing control user interface."
+    },
+    "exclude": {
+        "spryker-feature/order-experience-management": "Optional dependency. The plugins under `Yves/PurchasingControl/Plugin/OrderExperienceManagement` and `Zed/PurchasingControl/Communication/Plugin/OrderExperienceManagement` implement OrderExperienceManagement plugin interfaces and are only wired on the project level when that feature is installed."
     }
 }

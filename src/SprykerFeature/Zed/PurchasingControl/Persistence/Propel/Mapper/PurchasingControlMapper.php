@@ -19,10 +19,23 @@ class PurchasingControlMapper
 {
     protected const string COL_CONSUMED_AMOUNT = 'ConsumedAmount';
 
-    public function mapCostCenterEntityToTransfer(SpyCostCenter $costCenterEntity, CostCenterTransfer $costCenterTransfer): CostCenterTransfer
-    {
+    /**
+     * @param \Orm\Zed\PurchasingControl\Persistence\SpyCostCenter $costCenterEntity
+     * @param \Generated\Shared\Transfer\CostCenterTransfer $costCenterTransfer
+     * @param iterable<\Orm\Zed\PurchasingControl\Persistence\SpyCostCenterToCompanyBusinessUnit>|null $costCenterToCompanyBusinessUnitEntities Read upfront by the caller; falls back to lazy loading when not provided.
+     *
+     * @return \Generated\Shared\Transfer\CostCenterTransfer
+     */
+    public function mapCostCenterEntityToTransfer(
+        SpyCostCenter $costCenterEntity,
+        CostCenterTransfer $costCenterTransfer,
+        ?iterable $costCenterToCompanyBusinessUnitEntities = null,
+    ): CostCenterTransfer {
         $costCenterTransfer->fromArray($costCenterEntity->toArray(), true);
-        foreach ($costCenterEntity->getSpyCostCenterToCompanyBusinessUnits() as $costCenterToCompanyBusinessUnitEntity) {
+
+        $costCenterToCompanyBusinessUnitEntities ??= $costCenterEntity->getSpyCostCenterToCompanyBusinessUnits();
+
+        foreach ($costCenterToCompanyBusinessUnitEntities as $costCenterToCompanyBusinessUnitEntity) {
             $costCenterTransfer->addIdCompanyBusinessUnit($costCenterToCompanyBusinessUnitEntity->getFkCompanyBusinessUnit());
             $companyBusinessUnitEntity = $costCenterToCompanyBusinessUnitEntity->getSpyCompanyBusinessUnit();
             if ($companyBusinessUnitEntity !== null) {

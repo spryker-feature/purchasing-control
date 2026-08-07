@@ -1,0 +1,44 @@
+{% extends model('component') %}
+
+{% define config = {
+    name: 'recurring-order-cost-center-budget',
+} %}
+
+{% define data = {
+    approveForm: required,
+} %}
+
+{% block component %}
+    {% if data.approveForm.idCostCenter is defined and data.approveForm.idBudget is defined %}
+        {{ parent() }}
+    {% endif %}
+{% endblock %}
+
+{% block extraClass %}
+    box spacing-bottom
+{% endblock %}
+
+{% block body %}
+    {% set formGridClassName = "grid grid-gap spacing-bottom" %}
+    {% set formColClassName = "col col--md-6" %}
+
+    {% block form %}
+        <div class="{{ formGridClassName }}">
+            <div class="{{ formColClassName }}">
+                {{ form_row(data.approveForm.idCostCenter) }}
+            </div>
+            <div class="{{ formColClassName }}">
+                {{ form_row(data.approveForm.idBudget) }}
+            </div>
+        </div>
+    {% endblock %}
+    
+    {% block summary %}
+        {% include molecule('recurring-order-budget-summary', 'PurchasingControl') with {
+            attributes: {
+                'cost-center-selector': '[name$="[' ~ data.approveForm.idCostCenter.vars.name ~ ']"]',
+                'budget-selector': '[name$="[' ~ data.approveForm.idBudget.vars.name ~ ']"]',
+            },
+        } only %}
+    {% endblock %}
+{% endblock %}

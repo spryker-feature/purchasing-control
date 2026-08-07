@@ -43,13 +43,18 @@ class BudgetReader implements BudgetReaderInterface
 
     public function resolveBudgetName(?CostCenterTransfer $costCenterTransfer, ?int $idBudget): ?string
     {
+        return $this->findBudgetInCostCenter($costCenterTransfer, $idBudget)?->getName();
+    }
+
+    public function findBudgetInCostCenter(?CostCenterTransfer $costCenterTransfer, ?int $idBudget): ?BudgetTransfer
+    {
         if ($costCenterTransfer === null || $idBudget === null) {
             return null;
         }
 
         foreach ($costCenterTransfer->getBudgets() as $budgetTransfer) {
             if ($budgetTransfer->getIdBudget() === $idBudget) {
-                return $budgetTransfer->getName();
+                return $budgetTransfer;
             }
         }
 

@@ -22,6 +22,14 @@ class PurchasingControlDependencyProvider extends AbstractBundleDependencyProvid
 
     public const string CLIENT_STORE = 'CLIENT_STORE';
 
+    public const string CLIENT_CURRENCY = 'CLIENT_CURRENCY';
+
+    public const string CLIENT_GLOSSARY_STORAGE = 'CLIENT_GLOSSARY_STORAGE';
+
+    public const string CLIENT_LOCALE = 'CLIENT_LOCALE';
+
+    public const string SERVICE_UTIL_ENCODING = 'SERVICE_UTIL_ENCODING';
+
     public function provideDependencies(Container $container): Container
     {
         $container = parent::provideDependencies($container);
@@ -30,6 +38,46 @@ class PurchasingControlDependencyProvider extends AbstractBundleDependencyProvid
         $container = $this->addQuoteClient($container);
         $container = $this->addCompanyBusinessUnitClient($container);
         $container = $this->addStoreClient($container);
+        $container = $this->addCurrencyClient($container);
+        $container = $this->addGlossaryStorageClient($container);
+        $container = $this->addLocaleClient($container);
+        $container = $this->addUtilEncodingService($container);
+
+        return $container;
+    }
+
+    protected function addGlossaryStorageClient(Container $container): Container
+    {
+        $container->set(static::CLIENT_GLOSSARY_STORAGE, static function (Container $container) {
+            return $container->getLocator()->glossaryStorage()->client();
+        });
+
+        return $container;
+    }
+
+    protected function addLocaleClient(Container $container): Container
+    {
+        $container->set(static::CLIENT_LOCALE, static function (Container $container) {
+            return $container->getLocator()->locale()->client();
+        });
+
+        return $container;
+    }
+
+    protected function addCurrencyClient(Container $container): Container
+    {
+        $container->set(static::CLIENT_CURRENCY, static function (Container $container) {
+            return $container->getLocator()->currency()->client();
+        });
+
+        return $container;
+    }
+
+    protected function addUtilEncodingService(Container $container): Container
+    {
+        $container->set(static::SERVICE_UTIL_ENCODING, static function (Container $container) {
+            return $container->getLocator()->utilEncoding()->service();
+        });
 
         return $container;
     }

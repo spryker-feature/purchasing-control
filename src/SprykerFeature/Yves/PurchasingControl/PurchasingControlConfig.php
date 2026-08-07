@@ -8,9 +8,18 @@
 namespace SprykerFeature\Yves\PurchasingControl;
 
 use Spryker\Yves\Kernel\AbstractBundleConfig;
+use SprykerFeature\Shared\PurchasingControl\PurchasingControlConfig as SharedPurchasingControlConfig;
 
 class PurchasingControlConfig extends AbstractBundleConfig
 {
+    /**
+     * @var array<string>
+     */
+    protected const array RECURRING_ORDER_SELECTABLE_BUDGET_ENFORCEMENT_RULES = [
+        SharedPurchasingControlConfig::ENFORCEMENT_RULE_BLOCK,
+        SharedPurchasingControlConfig::ENFORCEMENT_RULE_WARN,
+    ];
+
     protected const int COMPANY_BUSINESS_UNIT_LIMIT_FOR_COST_CENTER_FORM = 30;
 
     protected const int COST_CENTER_LIST_DEFAULT_ITEMS_PER_PAGE = 10;
@@ -74,5 +83,19 @@ class PurchasingControlConfig extends AbstractBundleConfig
     public function getSummaryBudgetLimit(): int
     {
         return static::DEFAULT_SUMMARY_BUDGET_LIMIT;
+    }
+
+    /**
+     * Specification:
+     * - Returns the budget enforcement rules that can be selected on the recurring order review page.
+     * - Budgets bound to any other enforcement rule (e.g. approval workflow) are hidden from the selector.
+     *
+     * @api
+     *
+     * @return array<string>
+     */
+    public function getRecurringOrderSelectableBudgetEnforcementRules(): array
+    {
+        return static::RECURRING_ORDER_SELECTABLE_BUDGET_ENFORCEMENT_RULES;
     }
 }

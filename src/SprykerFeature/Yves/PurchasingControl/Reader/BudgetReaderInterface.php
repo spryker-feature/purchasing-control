@@ -19,4 +19,6 @@ interface BudgetReaderInterface
     public function findBudget(string $budgetUuid, string $costCenterUuid, int $idCompany): ?BudgetTransfer;
 
     public function resolveBudgetName(?CostCenterTransfer $costCenterTransfer, ?int $idBudget): ?string;
+
+    public function findBudgetInCostCenter(?CostCenterTransfer $costCenterTransfer, ?int $idBudget): ?BudgetTransfer;
 }

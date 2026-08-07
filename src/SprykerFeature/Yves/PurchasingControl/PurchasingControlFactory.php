@@ -11,15 +11,25 @@ use Generated\Shared\Transfer\BudgetTransfer;
 use Generated\Shared\Transfer\CostCenterTransfer;
 use Generated\Shared\Transfer\QuoteTransfer;
 use Spryker\Client\CompanyBusinessUnit\CompanyBusinessUnitClientInterface;
+use Spryker\Client\Currency\CurrencyClientInterface;
 use Spryker\Client\Customer\CustomerClientInterface;
+use Spryker\Client\GlossaryStorage\GlossaryStorageClientInterface;
+use Spryker\Client\Locale\LocaleClientInterface;
 use Spryker\Client\Money\MoneyClientInterface;
 use Spryker\Client\Quote\QuoteClientInterface;
 use Spryker\Client\Store\StoreClientInterface;
+use Spryker\Service\UtilEncoding\UtilEncodingServiceInterface;
 use Spryker\Shared\Application\ApplicationConstants;
 use Spryker\Yves\Kernel\AbstractFactory;
 use SprykerFeature\Client\PurchasingControl\PurchasingControlClientInterface;
+use SprykerFeature\Yves\PurchasingControl\Expander\CostCenterBudgetFormFieldExpander;
+use SprykerFeature\Yves\PurchasingControl\Expander\CostCenterBudgetFormFieldExpanderInterface;
 use SprykerFeature\Yves\PurchasingControl\Expander\CostCenterOrderSearchFormExpander;
 use SprykerFeature\Yves\PurchasingControl\Expander\CostCenterOrderSearchFormExpanderInterface;
+use SprykerFeature\Yves\PurchasingControl\Expander\CostCenterRecurringOrderApproveFormExpander;
+use SprykerFeature\Yves\PurchasingControl\Expander\CostCenterRecurringOrderApproveFormExpanderInterface;
+use SprykerFeature\Yves\PurchasingControl\Expander\CostCenterRecurringScheduleEditFormExpander;
+use SprykerFeature\Yves\PurchasingControl\Expander\CostCenterRecurringScheduleEditFormExpanderInterface;
 use SprykerFeature\Yves\PurchasingControl\Form\BudgetForm;
 use SprykerFeature\Yves\PurchasingControl\Form\BudgetSearchForm;
 use SprykerFeature\Yves\PurchasingControl\Form\CostCenterForm;
@@ -34,6 +44,8 @@ use SprykerFeature\Yves\PurchasingControl\Form\Handler\BudgetSearchFormHandler;
 use SprykerFeature\Yves\PurchasingControl\Form\Handler\CostCenterOrderSearchFormHandler;
 use SprykerFeature\Yves\PurchasingControl\Form\Handler\CostCenterOrderSearchFormHandlerInterface;
 use SprykerFeature\Yves\PurchasingControl\Form\Handler\CostCenterSearchFormHandler;
+use SprykerFeature\Yves\PurchasingControl\Formatter\BudgetSummaryFormatter;
+use SprykerFeature\Yves\PurchasingControl\Formatter\BudgetSummaryFormatterInterface;
 use SprykerFeature\Yves\PurchasingControl\Reader\BudgetReader;
 use SprykerFeature\Yves\PurchasingControl\Reader\BudgetReaderInterface;
 use SprykerFeature\Yves\PurchasingControl\Reader\CostCenterReader;
@@ -235,5 +247,60 @@ class PurchasingControlFactory extends AbstractFactory
     public function createCostCenterOrderSearchFormHandler(): CostCenterOrderSearchFormHandlerInterface
     {
         return new CostCenterOrderSearchFormHandler();
+    }
+
+    public function createCostCenterRecurringOrderApproveFormExpander(): CostCenterRecurringOrderApproveFormExpanderInterface
+    {
+        return new CostCenterRecurringOrderApproveFormExpander(
+            $this->createCostCenterBudgetFormFieldExpander(),
+        );
+    }
+
+    public function createCostCenterRecurringScheduleEditFormExpander(): CostCenterRecurringScheduleEditFormExpanderInterface
+    {
+        return new CostCenterRecurringScheduleEditFormExpander(
+            $this->createCostCenterBudgetFormFieldExpander(),
+        );
+    }
+
+    public function createCostCenterBudgetFormFieldExpander(): CostCenterBudgetFormFieldExpanderInterface
+    {
+        return new CostCenterBudgetFormFieldExpander(
+            $this->getCustomerClient(),
+            $this->createCostCenterReader(),
+            $this->createBudgetSummaryFormatter(),
+            $this->getUtilEncodingService(),
+            $this->getCurrencyClient(),
+            $this->getConfig(),
+        );
+    }
+
+    public function createBudgetSummaryFormatter(): BudgetSummaryFormatterInterface
+    {
+        return new BudgetSummaryFormatter(
+            $this->getMoneyClient(),
+            $this->getGlossaryStorageClient(),
+            $this->getLocaleClient(),
+        );
+    }
+
+    public function getUtilEncodingService(): UtilEncodingServiceInterface
+    {
+        return $this->getProvidedDependency(PurchasingControlDependencyProvider::SERVICE_UTIL_ENCODING);
+    }
+
+    public function getCurrencyClient(): CurrencyClientInterface
+    {
+        return $this->getProvidedDependency(PurchasingControlDependencyProvider::CLIENT_CURRENCY);
+    }
+
+    public function getGlossaryStorageClient(): GlossaryStorageClientInterface
+    {
+        return $this->getProvidedDependency(PurchasingControlDependencyProvider::CLIENT_GLOSSARY_STORAGE);
+    }
+
+    public function getLocaleClient(): LocaleClientInterface
+    {
+        return $this->getProvidedDependency(PurchasingControlDependencyProvider::CLIENT_LOCALE);
     }
 }

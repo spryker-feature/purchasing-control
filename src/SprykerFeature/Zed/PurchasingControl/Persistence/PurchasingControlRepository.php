@@ -45,14 +45,6 @@ class PurchasingControlRepository extends AbstractRepository implements Purchasi
 
         $costCenterQuery = $this->getFactory()->createCostCenterQuery();
 
-        if ($paginationTransfer === null) {
-            $costCenterQuery
-                ->leftJoinWithSpyCostCenterToCompanyBusinessUnit()
-                ->useSpyCostCenterToCompanyBusinessUnitQuery()
-                    ->leftJoinSpyCompanyBusinessUnit()
-                ->endUse();
-        }
-
         $costCenterQuery = $this->applyCostCenterConditions($costCenterQuery, $costCenterCriteriaTransfer);
 
         /** @var \ArrayObject<array-key, \Generated\Shared\Transfer\SortTransfer> $sortTransfers */
@@ -64,15 +56,56 @@ class PurchasingControlRepository extends AbstractRepository implements Purchasi
             $costCenterCollectionTransfer->setPagination($paginationTransfer);
         }
 
+        $costCenterEntities = $costCenterQuery->find();
+
+        $costCenterIds = [];
+        foreach ($costCenterEntities as $costCenterEntity) {
+            $costCenterIds[] = $costCenterEntity->getIdCostCenter();
+        }
+
+        $groupedCostCenterToCompanyBusinessUnitEntities = $this
+            ->getCostCenterToCompanyBusinessUnitEntitiesGroupedByIdCostCenter($costCenterIds);
+
         $mapper = $this->getFactory()->createPurchasingControlMapper();
 
-        foreach ($costCenterQuery->find() as $costCenterEntity) {
+        foreach ($costCenterEntities as $costCenterEntity) {
             $costCenterCollectionTransfer->addCostCenter(
-                $mapper->mapCostCenterEntityToTransfer($costCenterEntity, new CostCenterTransfer()),
+                $mapper->mapCostCenterEntityToTransfer(
+                    $costCenterEntity,
+                    new CostCenterTransfer(),
+                    $groupedCostCenterToCompanyBusinessUnitEntities[$costCenterEntity->getIdCostCenter()] ?? [],
+                ),
             );
         }
 
         return $costCenterCollectionTransfer;
+    }
+
+    /**
+     * @module CompanyBusinessUnit
+     *
+     * @param array<int> $costCenterIds
+     *
+     * @return array<int, list<\Orm\Zed\PurchasingControl\Persistence\SpyCostCenterToCompanyBusinessUnit>>
+     */
+    protected function getCostCenterToCompanyBusinessUnitEntitiesGroupedByIdCostCenter(array $costCenterIds): array
+    {
+        if ($costCenterIds === []) {
+            return [];
+        }
+
+        $costCenterToCompanyBusinessUnitEntities = $this->getFactory()
+            ->createCostCenterToCompanyBusinessUnitQuery()
+            ->filterByFkCostCenter_In($costCenterIds)
+            ->leftJoinWithSpyCompanyBusinessUnit()
+            ->find();
+
+        $groupedCostCenterToCompanyBusinessUnitEntities = [];
+        foreach ($costCenterToCompanyBusinessUnitEntities as $costCenterToCompanyBusinessUnitEntity) {
+            $groupedCostCenterToCompanyBusinessUnitEntities[$costCenterToCompanyBusinessUnitEntity->getFkCostCenter()][] = $costCenterToCompanyBusinessUnitEntity;
+        }
+
+        return $groupedCostCenterToCompanyBusinessUnitEntities;
     }
 
     /**
@@ -283,7 +316,7 @@ class PurchasingControlRepository extends AbstractRepository implements Purchasi
     public function getCompanyBusinessUnitIdsForCompany(int $idCompany, array $companyBusinessUnitIds): array
     {
         $companyBusinessUnitIds = $this->getFactory()
-            ->getCompanyBusinessUnitQuery()
+            ->getCompanyBusinessUnitPropelQuery()
             ->filterByIdCompanyBusinessUnit_In($companyBusinessUnitIds)
             ->filterByFkCompany($idCompany)
             ->select(SpyCompanyBusinessUnitTableMap::COL_ID_COMPANY_BUSINESS_UNIT)

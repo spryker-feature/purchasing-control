@@ -51,7 +51,7 @@ class PurchasingControlPersistenceFactory extends AbstractPersistenceFactory
     /**
      * @module CompanyBusinessUnit
      */
-    public function getCompanyBusinessUnitQuery(): SpyCompanyBusinessUnitQuery
+    public function getCompanyBusinessUnitPropelQuery(): SpyCompanyBusinessUnitQuery
     {
         return $this->getProvidedDependency(PurchasingControlDependencyProvider::PROPEL_QUERY_COMPANY_BUSINESS_UNIT);
     }

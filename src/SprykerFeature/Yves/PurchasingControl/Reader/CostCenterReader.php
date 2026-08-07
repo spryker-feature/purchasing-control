@@ -73,7 +73,7 @@ class CostCenterReader implements CostCenterReaderInterface
         return $costCenterCollectionTransfer->getCostCenters()->getIterator()->current() ?: null;
     }
 
-    public function findCostCenterWithBudgets(?int $idCostCenter): ?CostCenterTransfer
+    public function findActiveCostCenterWithBudgets(?int $idCostCenter): ?CostCenterTransfer
     {
         if ($idCostCenter === null) {
             return null;
@@ -83,6 +83,7 @@ class CostCenterReader implements CostCenterReaderInterface
             (new CostCenterCriteriaTransfer())->setCostCenterConditions(
                 (new CostCenterConditionsTransfer())
                     ->addIdCostCenter($idCostCenter)
+                    ->setIsActive(true)
                     ->setWithBudgets(true),
             ),
         );

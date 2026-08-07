@@ -14,6 +14,7 @@ use Generated\Shared\Transfer\CostCenterCollectionRequestTransfer;
 use Generated\Shared\Transfer\CostCenterConditionsTransfer;
 use Generated\Shared\Transfer\CostCenterCriteriaTransfer;
 use Generated\Shared\Transfer\CostCenterTransfer;
+use Generated\Shared\Transfer\PaginationTransfer;
 use Orm\Zed\PurchasingControl\Persistence\SpyBudgetQuery;
 use Orm\Zed\PurchasingControl\Persistence\SpyCostCenterQuery;
 use SprykerFeature\Shared\PurchasingControl\PurchasingControlConfig as SharedPurchasingControlConfig;
@@ -54,6 +55,8 @@ class PurchasingControlFacadeTest extends Unit
     protected const string GLOSSARY_KEY_COST_CENTER_BUSINESS_UNIT_EMPTY = 'purchasing_control.cost_center.validation.business_unit_empty';
 
     protected const string COMPANY_BUSINESS_UNIT = 'companyBusinessUnit';
+
+    protected const int PAGINATION_LIMIT = 10;
 
     protected PurchasingControlBusinessTester $tester;
 
@@ -132,6 +135,50 @@ class PurchasingControlFacadeTest extends Unit
             $companyBusinessUnitTransfer->getIdCompanyBusinessUnitOrFail(),
             $collection->getCostCenters()->offsetGet(0)->getCompanyBusinessUnitIds(),
         );
+    }
+
+    public function testGetCostCenterCollectionWithPaginationAssignsOnlyOwnCompanyBusinessUnitsToEachCostCenter(): void
+    {
+        // Arrange
+        $firstCompanyBusinessUnitTransfer = $this->createCompanyBusinessUnit();
+        $secondCompanyBusinessUnitTransfer = $this->createCompanyBusinessUnit();
+
+        $firstCostCenterTransfer = $this->tester->haveCostCenter([
+            static::COMPANY_BUSINESS_UNIT => $firstCompanyBusinessUnitTransfer,
+        ]);
+        $secondCostCenterTransfer = $this->tester->haveCostCenter([
+            static::COMPANY_BUSINESS_UNIT => $secondCompanyBusinessUnitTransfer,
+        ]);
+
+        // Act
+        $costCenterCollectionTransfer = $this->tester->getFacade()->getCostCenterCollection(
+            (new CostCenterCriteriaTransfer())
+                ->setPagination((new PaginationTransfer())->setLimit(static::PAGINATION_LIMIT))
+                ->setCostCenterConditions(
+                    (new CostCenterConditionsTransfer())
+                        ->addIdCostCenter($firstCostCenterTransfer->getIdCostCenterOrFail())
+                        ->addIdCostCenter($secondCostCenterTransfer->getIdCostCenterOrFail()),
+                ),
+        );
+
+        // Assert
+        $this->assertCount(2, $costCenterCollectionTransfer->getCostCenters());
+
+        $expectedCompanyBusinessUnitIds = [
+            $firstCostCenterTransfer->getIdCostCenterOrFail() => $firstCompanyBusinessUnitTransfer->getIdCompanyBusinessUnitOrFail(),
+            $secondCostCenterTransfer->getIdCostCenterOrFail() => $secondCompanyBusinessUnitTransfer->getIdCompanyBusinessUnitOrFail(),
+        ];
+
+        foreach ($costCenterCollectionTransfer->getCostCenters() as $costCenterTransfer) {
+            $expectedIdCompanyBusinessUnit = $expectedCompanyBusinessUnitIds[$costCenterTransfer->getIdCostCenterOrFail()];
+
+            $this->assertSame([$expectedIdCompanyBusinessUnit], $costCenterTransfer->getCompanyBusinessUnitIds());
+            $this->assertCount(1, $costCenterTransfer->getCompanyBusinessUnits());
+            $this->assertSame(
+                $expectedIdCompanyBusinessUnit,
+                $costCenterTransfer->getCompanyBusinessUnits()->offsetGet(0)->getIdCompanyBusinessUnit(),
+            );
+        }
     }
 
     public function testGetCostCenterCollectionFiltersByIsActive(): void
@@ -433,5 +480,15 @@ class PurchasingControlFacadeTest extends Unit
             static::GLOSSARY_KEY_COST_CENTER_BUSINESS_UNIT_EMPTY,
             $response->getErrors()->getIterator()->current()->getMessage(),
         );
+    }
+
+    protected function createCompanyBusinessUnit(): CompanyBusinessUnitTransfer
+    {
+        $companyTransfer = $this->tester->haveCompany();
+
+        return $this->tester->haveCompanyBusinessUnit([
+            CompanyBusinessUnitTransfer::FK_COMPANY => $companyTransfer->getIdCompany(),
+            CompanyBusinessUnitTransfer::COMPANY => $companyTransfer,
+        ]);
     }
 }

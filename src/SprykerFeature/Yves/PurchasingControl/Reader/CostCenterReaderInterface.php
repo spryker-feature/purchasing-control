@@ -22,5 +22,5 @@ interface CostCenterReaderInterface
 
     public function getCostCentersWithBudgetsForOrderSearch(?int $idCompanyBusinessUnit, ?int $idCompany = null): CostCenterCollectionTransfer;
 
-    public function findCostCenterWithBudgets(?int $idCostCenter): ?CostCenterTransfer;
+    public function findActiveCostCenterWithBudgets(?int $idCostCenter): ?CostCenterTransfer;
 }

@@ -7,8 +7,6 @@
 
 namespace SprykerFeature\Zed\PurchasingControl\Business\Budget;
 
-use Generated\Shared\Transfer\BudgetConditionsTransfer;
-use Generated\Shared\Transfer\BudgetCriteriaTransfer;
 use Generated\Shared\Transfer\BudgetTransfer;
 use Generated\Shared\Transfer\CheckoutErrorTransfer;
 use Generated\Shared\Transfer\CheckoutResponseTransfer;
@@ -17,7 +15,6 @@ use InvalidArgumentException;
 use Spryker\Zed\QuoteApproval\Business\QuoteApprovalFacadeInterface;
 use SprykerFeature\Shared\PurchasingControl\PurchasingControlConfig;
 use SprykerFeature\Zed\PurchasingControl\Business\CostCenter\CostCenterActiveCheckerInterface;
-use SprykerFeature\Zed\PurchasingControl\Persistence\PurchasingControlRepositoryInterface;
 
 class BudgetCheckoutValidator implements BudgetCheckoutValidatorInterface
 {
@@ -32,7 +29,7 @@ class BudgetCheckoutValidator implements BudgetCheckoutValidatorInterface
     protected const string GLOSSARY_KEY_VALIDATION_INACTIVE_COST_CENTER = 'purchasing_control.validation.inactive-cost-center';
 
     public function __construct(
-        protected readonly PurchasingControlRepositoryInterface $purchasingControlRepository,
+        protected readonly QuoteBudgetReaderInterface $quoteBudgetReader,
         protected readonly QuoteApprovalFacadeInterface $quoteApprovalFacade,
         protected readonly CostCenterActiveCheckerInterface $costCenterActiveChecker,
     ) {
@@ -40,7 +37,7 @@ class BudgetCheckoutValidator implements BudgetCheckoutValidatorInterface
 
     public function validateBudgetForCheckout(QuoteTransfer $quoteTransfer, CheckoutResponseTransfer $checkoutResponseTransfer): bool
     {
-        $budgetTransfer = $this->findBudgetForQuote($quoteTransfer);
+        $budgetTransfer = $this->quoteBudgetReader->findBudgetForQuote($quoteTransfer, true);
 
         if ($budgetTransfer === null || !$this->isBudgetActiveForQuote($budgetTransfer, $quoteTransfer)) {
             return $this->validateBudgetIsRequired($quoteTransfer, $checkoutResponseTransfer);
@@ -51,23 +48,6 @@ class BudgetCheckoutValidator implements BudgetCheckoutValidatorInterface
         }
 
         return $this->handleExceededBudget($budgetTransfer, $quoteTransfer, $checkoutResponseTransfer);
-    }
-
-    protected function findBudgetForQuote(QuoteTransfer $quoteTransfer): ?BudgetTransfer
-    {
-        if ($quoteTransfer->getIdBudget() === null) {
-            return null;
-        }
-
-        $budgetCollectionTransfer = $this->purchasingControlRepository->getBudgetCollection(
-            (new BudgetCriteriaTransfer())->setBudgetConditions(
-                (new BudgetConditionsTransfer())
-                    ->addIdBudget($quoteTransfer->getIdBudgetOrFail())
-                    ->setWithBudgetConsumption(true),
-            ),
-        );
-
-        return $budgetCollectionTransfer->getBudgets()->getIterator()->current() ?: null;
     }
 
     protected function isBudgetActiveForQuote(BudgetTransfer $budgetTransfer, QuoteTransfer $quoteTransfer): bool

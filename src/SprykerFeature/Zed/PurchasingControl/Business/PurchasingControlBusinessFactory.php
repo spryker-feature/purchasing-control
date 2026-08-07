@@ -19,6 +19,8 @@ use Spryker\Zed\Kernel\Business\AbstractBusinessFactory;
 use Spryker\Zed\Quote\Business\QuoteFacadeInterface;
 use Spryker\Zed\QuoteApproval\Business\QuoteApprovalFacadeInterface;
 use Spryker\Zed\Sales\Business\SalesFacadeInterface;
+use SprykerFeature\Zed\PurchasingControl\Business\Budget\BudgetApprovalRuleValidator;
+use SprykerFeature\Zed\PurchasingControl\Business\Budget\BudgetApprovalRuleValidatorInterface;
 use SprykerFeature\Zed\PurchasingControl\Business\Budget\BudgetCancellationRestorer;
 use SprykerFeature\Zed\PurchasingControl\Business\Budget\BudgetCancellationRestorerInterface;
 use SprykerFeature\Zed\PurchasingControl\Business\Budget\BudgetCheckoutValidator;
@@ -43,6 +45,8 @@ use SprykerFeature\Zed\PurchasingControl\Business\Budget\OrderItemExtractor;
 use SprykerFeature\Zed\PurchasingControl\Business\Budget\OrderItemExtractorInterface;
 use SprykerFeature\Zed\PurchasingControl\Business\Budget\OrderItemStateChecker;
 use SprykerFeature\Zed\PurchasingControl\Business\Budget\OrderItemStateCheckerInterface;
+use SprykerFeature\Zed\PurchasingControl\Business\Budget\QuoteBudgetReader;
+use SprykerFeature\Zed\PurchasingControl\Business\Budget\QuoteBudgetReaderInterface;
 use SprykerFeature\Zed\PurchasingControl\Business\Budget\ShipmentExpenseCalculator;
 use SprykerFeature\Zed\PurchasingControl\Business\Budget\ShipmentExpenseCalculatorInterface;
 use SprykerFeature\Zed\PurchasingControl\Business\CostCenter\CostCenterActiveChecker;
@@ -129,11 +133,9 @@ class PurchasingControlBusinessFactory extends AbstractBusinessFactory
         DataImporterDataSourceConfigurationTransfer $dataImporterDataSourceConfigurationTransfer,
         ?DataImporterConfigurationTransfer $dataImporterConfigurationTransfer = null,
     ): DataImporterInterface {
-        if ($dataImporterConfigurationTransfer) {
-            return $this->getDataImportFactory()->getCsvDataImporterFromConfig($dataImporterConfigurationTransfer);
-        }
-
-        return $this->getCsvDataImporterFromConfig($dataImporterDataSourceConfigurationTransfer);
+        return $dataImporterConfigurationTransfer !== null
+            ? $this->getDataImportFactory()->getCsvDataImporterFromConfig($dataImporterConfigurationTransfer)
+            : $this->getCsvDataImporterFromConfig($dataImporterDataSourceConfigurationTransfer);
     }
 
     public function getCostCenterToCompanyBusinessUnitDataImporter(
@@ -329,10 +331,20 @@ class PurchasingControlBusinessFactory extends AbstractBusinessFactory
     public function createBudgetCheckoutValidator(): BudgetCheckoutValidatorInterface
     {
         return new BudgetCheckoutValidator(
-            $this->getRepository(),
+            $this->createQuoteBudgetReader(),
             $this->getQuoteApprovalFacade(),
             $this->createCostCenterActiveChecker(),
         );
+    }
+
+    public function createQuoteBudgetReader(): QuoteBudgetReaderInterface
+    {
+        return new QuoteBudgetReader($this->getRepository());
+    }
+
+    public function createBudgetApprovalRuleValidator(): BudgetApprovalRuleValidatorInterface
+    {
+        return new BudgetApprovalRuleValidator($this->createQuoteBudgetReader());
     }
 
     public function createCostCenterActiveChecker(): CostCenterActiveCheckerInterface

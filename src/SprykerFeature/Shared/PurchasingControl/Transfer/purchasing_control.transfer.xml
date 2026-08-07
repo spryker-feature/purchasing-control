@@ -81,6 +81,16 @@
         <property name="updatedAt" type="string"/>
     </transfer>
 
+    <transfer name="BudgetSummary" strict="true">
+        <property name="totalAmount" type="int"/>
+        <property name="usedAmount" type="int"/>
+        <property name="usedPercent" type="int"/>
+        <property name="totalFormatted" type="string"/>
+        <property name="usedFormatted" type="string"/>
+        <property name="remainingFormatted" type="string"/>
+        <property name="usageInfo" type="string"/>
+    </transfer>
+
     <transfer name="BudgetCollection" strict="true">
         <property name="budgets" type="Budget[]" singular="budget"/>
         <property name="pagination" type="Pagination"/>
@@ -375,6 +385,20 @@
         <property name="column" type="string"/>
         <property name="value" type="string"/>
         <property name="comparison" type="string"/>
+    </transfer>
+
+    <transfer name="RecurringSchedule" strict="true">
+        <property name="idRecurringSchedule" type="int"/>
+        <property name="currencyIsoCode" type="string"/>
+        <property name="quoteData" type="string"/>
+    </transfer>
+
+    <transfer name="RecurringScheduleReviewResponse" strict="true">
+        <property name="recurringSchedule" type="RecurringSchedule"/>
+    </transfer>
+
+    <transfer name="RecurringScheduleEventRequest" strict="true">
+        <property name="quote" type="Quote"/>
     </transfer>
 
 </transfers>

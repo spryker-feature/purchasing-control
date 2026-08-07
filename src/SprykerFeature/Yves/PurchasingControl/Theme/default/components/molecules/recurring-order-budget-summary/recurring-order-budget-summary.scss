@@ -1,0 +1,37 @@
+@use 'sass:meta';
+@use 'sass:color';
+@use 'sass:map';
+@mixin purchasing-control-recurring-order-budget-summary($name: '.recurring-order-budget-summary') {
+    #{$name} {
+        @if meta.mixin-exists(purchasing-control-recurring-order-budget-summary-base-hook) {
+            @include purchasing-control-recurring-order-budget-summary-base-hook;
+        }
+
+        &__key {
+            @include helper-font-size(small);
+            display: block;
+        }
+
+        &__value {
+            @include helper-font-size(big);
+        }
+
+        &__progress {
+            height: 0.5rem;
+            border-radius: 0.25rem;
+            background: helper-color-light($setting-color-main, 70);
+        }
+
+        &__bar {
+            height: 100%;
+            border-radius: 0.25rem;
+            background: $setting-color-main;
+        }
+
+        &__remaining-wrapper {
+            padding-top: map.get($setting-spacing, default);
+        }
+
+        @content;
+    }
+}

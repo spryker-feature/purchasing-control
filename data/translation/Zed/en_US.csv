@@ -51,3 +51,4 @@ purchasing_control.budget.validation.amount_too_large,"Budget amount exceeds the
 purchasing_control.budget.validation.name_too_long,"Budget name must not exceed 100 characters."
 purchasing_control.cost_center.validation.name_too_long,"Cost center name must not exceed 100 characters."
 urchasing_control.budget.validation.end_date_in_past,"End date cannot be in the past."
+purchasing_control.recurring_order.budget.usage,"%used% used of %total%"

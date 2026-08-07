@@ -1,0 +1,3 @@
+@include helper-import(molecule, recurring-order-budget-summary) {
+    @include purchasing-control-recurring-order-budget-summary;
+}
