@@ -79,8 +79,6 @@ class CostCenterFormDataProvider
 
     /**
      * @param array<int> $companyBusinessUnitIds
-     *
-     * @return \Generated\Shared\Transfer\CompanyBusinessUnitCollectionTransfer
      */
     protected function getCompanyBusinessUnitCollectionTransfer(array $companyBusinessUnitIds): CompanyBusinessUnitCollectionTransfer
     {

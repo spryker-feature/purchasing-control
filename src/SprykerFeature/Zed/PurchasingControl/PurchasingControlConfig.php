@@ -52,8 +52,6 @@ class PurchasingControlConfig extends AbstractBundleConfig
      * - Returns the data importer configuration for cost centers.
      *
      * @api
-     *
-     * @return \Generated\Shared\Transfer\DataImporterDataSourceConfigurationTransfer
      */
     public function getCostCenterDataImporterConfiguration(): DataImporterDataSourceConfigurationTransfer
     {
@@ -69,8 +67,6 @@ class PurchasingControlConfig extends AbstractBundleConfig
      * - Returns the data importer configuration for budgets.
      *
      * @api
-     *
-     * @return \Generated\Shared\Transfer\DataImporterDataSourceConfigurationTransfer
      */
     public function getBudgetDataImporterConfiguration(): DataImporterDataSourceConfigurationTransfer
     {
@@ -86,8 +82,6 @@ class PurchasingControlConfig extends AbstractBundleConfig
      * - Returns the data importer configuration for cost center to company business unit relations.
      *
      * @api
-     *
-     * @return \Generated\Shared\Transfer\DataImporterDataSourceConfigurationTransfer
      */
     public function getCostCenterToCompanyBusinessUnitDataImporterConfiguration(): DataImporterDataSourceConfigurationTransfer
     {

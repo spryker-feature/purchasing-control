@@ -33,10 +33,6 @@ interface PurchasingControlFacadeInterface
      * - Returns all items from the request alongside any validation errors.
      *
      * @api
-     *
-     * @param \Generated\Shared\Transfer\CostCenterCollectionRequestTransfer $costCenterCollectionRequestTransfer
-     *
-     * @return \Generated\Shared\Transfer\CostCenterCollectionResponseTransfer
      */
     public function createCostCenterCollection(CostCenterCollectionRequestTransfer $costCenterCollectionRequestTransfer): CostCenterCollectionResponseTransfer;
 
@@ -55,10 +51,6 @@ interface PurchasingControlFacadeInterface
      * - Returns all items from the request alongside any validation errors.
      *
      * @api
-     *
-     * @param \Generated\Shared\Transfer\CostCenterCollectionRequestTransfer $costCenterCollectionRequestTransfer
-     *
-     * @return \Generated\Shared\Transfer\CostCenterCollectionResponseTransfer
      */
     public function updateCostCenterCollection(CostCenterCollectionRequestTransfer $costCenterCollectionRequestTransfer): CostCenterCollectionResponseTransfer;
 
@@ -75,10 +67,6 @@ interface PurchasingControlFacadeInterface
      * - Supports pagination via `CostCenterCriteriaTransfer.pagination`.
      *
      * @api
-     *
-     * @param \Generated\Shared\Transfer\CostCenterCriteriaTransfer $costCenterCriteriaTransfer
-     *
-     * @return \Generated\Shared\Transfer\CostCenterCollectionTransfer
      */
     public function getCostCenterCollection(CostCenterCriteriaTransfer $costCenterCriteriaTransfer): CostCenterCollectionTransfer;
 
@@ -94,10 +82,6 @@ interface PurchasingControlFacadeInterface
      * - Returns all items from the request alongside any validation errors.
      *
      * @api
-     *
-     * @param \Generated\Shared\Transfer\BudgetCollectionRequestTransfer $budgetCollectionRequestTransfer
-     *
-     * @return \Generated\Shared\Transfer\BudgetCollectionResponseTransfer
      */
     public function createBudgetCollection(BudgetCollectionRequestTransfer $budgetCollectionRequestTransfer): BudgetCollectionResponseTransfer;
 
@@ -113,10 +97,6 @@ interface PurchasingControlFacadeInterface
      * - Returns all items from the request alongside any validation errors.
      *
      * @api
-     *
-     * @param \Generated\Shared\Transfer\BudgetCollectionRequestTransfer $budgetCollectionRequestTransfer
-     *
-     * @return \Generated\Shared\Transfer\BudgetCollectionResponseTransfer
      */
     public function updateBudgetCollection(BudgetCollectionRequestTransfer $budgetCollectionRequestTransfer): BudgetCollectionResponseTransfer;
 
