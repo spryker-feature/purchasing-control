@@ -184,6 +184,27 @@
         <property name="status" type="string"/>
     </transfer>
 
+    <transfer name="QuoteRequest">
+        <property name="quoteRequestReference" type="string"/>
+        <property name="latestVersion" type="QuoteRequestVersion"/>
+        <property name="companyUser" type="CompanyUser"/>
+    </transfer>
+
+    <transfer name="QuoteRequestVersion">
+        <property name="quote" type="Quote"/>
+    </transfer>
+
+    <transfer name="QuoteRequestFilter">
+        <property name="quoteRequestReference" type="string"/>
+        <property name="idCompanyUser" type="int"/>
+    </transfer>
+
+    <transfer name="QuoteRequestResponse">
+        <property name="isSuccessful" type="bool"/>
+        <property name="quoteRequest" type="QuoteRequest"/>
+        <property name="messages" type="Message[]" singular="message"/>
+    </transfer>
+
     <transfer name="Customer">
         <property name="customerReference" type="string"/>
         <property name="companyUserTransfer" type="CompanyUser"/>

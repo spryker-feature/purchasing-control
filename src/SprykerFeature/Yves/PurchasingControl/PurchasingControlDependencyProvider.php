@@ -30,6 +30,12 @@ class PurchasingControlDependencyProvider extends AbstractBundleDependencyProvid
 
     public const string SERVICE_UTIL_ENCODING = 'SERVICE_UTIL_ENCODING';
 
+    public const string CLIENT_COMPANY_USER = 'CLIENT_COMPANY_USER';
+
+    public const string CLIENT_QUOTE_REQUEST = 'CLIENT_QUOTE_REQUEST';
+
+    public const string CLIENT_QUOTE_REQUEST_AGENT = 'CLIENT_QUOTE_REQUEST_AGENT';
+
     public function provideDependencies(Container $container): Container
     {
         $container = parent::provideDependencies($container);
@@ -42,6 +48,9 @@ class PurchasingControlDependencyProvider extends AbstractBundleDependencyProvid
         $container = $this->addGlossaryStorageClient($container);
         $container = $this->addLocaleClient($container);
         $container = $this->addUtilEncodingService($container);
+        $container = $this->addCompanyUserClient($container);
+        $container = $this->addQuoteRequestClient($container);
+        $container = $this->addQuoteRequestAgentClient($container);
 
         return $container;
     }
@@ -122,6 +131,33 @@ class PurchasingControlDependencyProvider extends AbstractBundleDependencyProvid
     {
         $container->set(static::CLIENT_STORE, static function (Container $container) {
             return $container->getLocator()->store()->client();
+        });
+
+        return $container;
+    }
+
+    protected function addCompanyUserClient(Container $container): Container
+    {
+        $container->set(static::CLIENT_COMPANY_USER, static function (Container $container) {
+            return $container->getLocator()->companyUser()->client();
+        });
+
+        return $container;
+    }
+
+    protected function addQuoteRequestClient(Container $container): Container
+    {
+        $container->set(static::CLIENT_QUOTE_REQUEST, static function (Container $container) {
+            return $container->getLocator()->quoteRequest()->client();
+        });
+
+        return $container;
+    }
+
+    protected function addQuoteRequestAgentClient(Container $container): Container
+    {
+        $container->set(static::CLIENT_QUOTE_REQUEST_AGENT, static function (Container $container) {
+            return $container->getLocator()->quoteRequestAgent()->client();
         });
 
         return $container;

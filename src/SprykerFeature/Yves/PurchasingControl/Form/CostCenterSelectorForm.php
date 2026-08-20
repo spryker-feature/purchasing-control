@@ -11,6 +11,9 @@ use Spryker\Yves\Kernel\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormError;
+use Symfony\Component\Form\FormEvent;
+use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Choice;
 use Symfony\Component\Validator\Constraints\NotBlank;
@@ -27,7 +30,13 @@ class CostCenterSelectorForm extends AbstractType
 
     public const string OPTION_BUDGET_CHOICES = 'budget_choices';
 
+    public const string OPTION_BUDGET_LABELS = 'budget_labels';
+
     public const string OPTION_BUDGET_CHOICE_ATTRS = 'budget_choice_attrs';
+
+    public const string OPTION_BUDGET_COST_CENTER_MAP = 'budget_cost_center_map';
+
+    protected const string GLOSSARY_KEY_BUDGET_COST_CENTER_MISMATCH = 'purchasing_control.budget.validation.cost_center_mismatch';
 
     public function getBlockPrefix(): string
     {
@@ -38,15 +47,24 @@ class CostCenterSelectorForm extends AbstractType
     {
         $this->addIdCostCenterField($builder, $options)
             ->addIdBudgetField($builder, $options)
-            ->addApplyField($builder);
+            ->addApplyField($builder)
+            ->addBudgetCostCenterConsistencyValidation($builder, $options);
     }
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setRequired([static::OPTION_COST_CENTER_CHOICES, static::OPTION_BUDGET_CHOICES, static::OPTION_BUDGET_CHOICE_ATTRS]);
+        $resolver->setRequired([
+            static::OPTION_COST_CENTER_CHOICES,
+            static::OPTION_BUDGET_CHOICES,
+            static::OPTION_BUDGET_LABELS,
+            static::OPTION_BUDGET_CHOICE_ATTRS,
+            static::OPTION_BUDGET_COST_CENTER_MAP,
+        ]);
         $resolver->setAllowedTypes(static::OPTION_COST_CENTER_CHOICES, 'array');
         $resolver->setAllowedTypes(static::OPTION_BUDGET_CHOICES, 'array');
+        $resolver->setAllowedTypes(static::OPTION_BUDGET_LABELS, 'array');
         $resolver->setAllowedTypes(static::OPTION_BUDGET_CHOICE_ATTRS, 'array');
+        $resolver->setAllowedTypes(static::OPTION_BUDGET_COST_CENTER_MAP, 'array');
     }
 
     /**
@@ -66,9 +84,37 @@ class CostCenterSelectorForm extends AbstractType
             'attr' => [
                 'id' => 'cost-center-select',
                 'class' => 'cost-center-selector__select',
-                'onchange' => 'this.form.submit()',
             ],
         ]);
+
+        return $this;
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     */
+    protected function addBudgetCostCenterConsistencyValidation(FormBuilderInterface $builder, array $options): static
+    {
+        // The budget field offers the budgets of every cost center, so a mismatching pair reaches
+        // the server whenever the browser side filtering is bypassed.
+        $budgetCostCenterMap = $options[static::OPTION_BUDGET_COST_CENTER_MAP];
+
+        $builder->addEventListener(FormEvents::POST_SUBMIT, static function (FormEvent $formEvent) use ($budgetCostCenterMap): void {
+            $formData = $formEvent->getData();
+            $idBudget = $formData[static::FIELD_ID_BUDGET] ?? null;
+
+            if ($idBudget === null) {
+                return;
+            }
+
+            if (($budgetCostCenterMap[$idBudget] ?? null) === ($formData[static::FIELD_ID_COST_CENTER] ?? null)) {
+                return;
+            }
+
+            $formEvent->getForm()
+                ->get(static::FIELD_ID_BUDGET)
+                ->addError(new FormError(static::GLOSSARY_KEY_BUDGET_COST_CENTER_MISMATCH));
+        });
 
         return $this;
     }
@@ -88,16 +134,20 @@ class CostCenterSelectorForm extends AbstractType
      */
     protected function addIdBudgetField(FormBuilderInterface $builder, array $options): static
     {
-        $budgetChoices = $options[static::OPTION_BUDGET_CHOICES];
+        $budgetIds = $options[static::OPTION_BUDGET_CHOICES];
+        $budgetLabels = $options[static::OPTION_BUDGET_LABELS];
         $budgetChoiceAttrs = $options[static::OPTION_BUDGET_CHOICE_ATTRS];
-        $hasBudgets = (bool)$budgetChoices;
+        $hasBudgets = (bool)$budgetIds;
 
         $builder->add(static::FIELD_ID_BUDGET, ChoiceType::class, [
-            'choices' => $budgetChoices,
+            'choices' => $budgetIds,
+            'choice_label' => static function (int $budgetId) use ($budgetLabels): string {
+                return $budgetLabels[$budgetId];
+            },
             'label' => 'purchasing_control.budget.selector.label',
             'required' => $hasBudgets,
             'placeholder' => $hasBudgets ? 'purchasing_control.budget.selector.placeholder' : false,
-            'constraints' => $hasBudgets ? [new Choice(['choices' => array_values($budgetChoices)])] : [],
+            'constraints' => $hasBudgets ? [new Choice(['choices' => $budgetIds])] : [],
             'choice_attr' => static function (int $budgetId) use ($budgetChoiceAttrs): array {
                 return $budgetChoiceAttrs[$budgetId] ?? [];
             },

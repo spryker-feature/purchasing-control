@@ -16,7 +16,7 @@ interface CostCenterResolverInterface
     /**
      * @return \ArrayObject<int, \Generated\Shared\Transfer\CostCenterTransfer>
      */
-    public function resolveCostCenters(QuoteTransfer $quoteTransfer): ArrayObject;
+    public function resolveCostCenters(QuoteTransfer $quoteTransfer, ?int $idCompanyBusinessUnit = null): ArrayObject;
 
     /**
      * @param \ArrayObject<int, \Generated\Shared\Transfer\CostCenterTransfer> $costCenterTransfers

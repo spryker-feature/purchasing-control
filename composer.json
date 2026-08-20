@@ -26,6 +26,8 @@
         "spryker/quote": "^2.0.0",
         "spryker/quote-approval": "^1.5.0",
         "spryker/quote-extension": "^1.0.0",
+        "spryker/quote-request": "^2.8.0",
+        "spryker/quote-request-agent": "^2.3.0",
         "spryker/sales": "^11.83.0",
         "spryker/sales-extension": "^1.15.0",
         "spryker/store": "^1.35.0",
@@ -51,6 +53,8 @@
         "spryker-feature/order-experience-management": "Enables cost center selection in recurring order approve and schedule edit forms, and blocks recurring order checkout for budgets that require approval. Install this feature to use the plugins under `Yves/PurchasingControl/Plugin/OrderExperienceManagement` and `Zed/PurchasingControl/Communication/Plugin/OrderExperienceManagement`.",
         "spryker-shop/company-page": "Use this module if you want to display company information on the storefront.",
         "spryker-shop/customer-page": "Use this module if you want to display customer information on the storefront.",
+        "spryker-shop/quote-request-agent-page": "Add the module if you want to use QuoteRequestAgentCostCenterSelectorWidget on the agent quote request details and edit pages: ^3.7.0",
+        "spryker-shop/quote-request-page": "Add the module if you want to use QuoteRequestCostCenterSelectorWidget on the quote request details and edit pages: ^3.8.0",
         "spryker/oms": "Use OMS to manage order states and processes.",
         "spryker/router": "Use Router when the storefront needs to be able to route to the purchasing control module."
     },

@@ -290,3 +290,7 @@ purchasing_control.budget.validation.end_date_in_past,End date cannot be in the 
 purchasing_control.budget.validation.end_date_in_past,Das Enddatum darf nicht in der Vergangenheit liegen.,de_DE
 purchasing_control.budget.action.view,View,en_US
 purchasing_control.budget.action.view,Ansehen,de_DE
+purchasing_control.quote_request.cost_center_updated,Cost center and budget have been saved.,en_US
+purchasing_control.quote_request.cost_center_updated,Kostenstelle und Budget wurden gespeichert.,de_DE
+purchasing_control.budget.validation.cost_center_mismatch,The selected budget does not belong to the selected cost center.,en_US
+purchasing_control.budget.validation.cost_center_mismatch,Das ausgewählte Budget gehört nicht zur ausgewählten Kostenstelle.,de_DE

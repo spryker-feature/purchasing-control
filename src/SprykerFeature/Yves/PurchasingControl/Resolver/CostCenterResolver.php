@@ -21,11 +21,11 @@ class CostCenterResolver implements CostCenterResolverInterface
     ) {
     }
 
-    public function resolveCostCenters(QuoteTransfer $quoteTransfer): ArrayObject
+    public function resolveCostCenters(QuoteTransfer $quoteTransfer, ?int $idCompanyBusinessUnit = null): ArrayObject
     {
-        $customerTransfer = $this->customerClient->getCustomer();
+        $idCompanyBusinessUnit = $idCompanyBusinessUnit ?? $this->resolveIdCompanyBusinessUnitFromCustomer();
 
-        if (!$customerTransfer || !$customerTransfer->getCompanyUserTransfer()) {
+        if ($idCompanyBusinessUnit === null) {
             return new ArrayObject();
         }
 
@@ -37,11 +37,22 @@ class CostCenterResolver implements CostCenterResolverInterface
 
         return $this->costCenterReader
             ->getActiveCostCentersForCompanyBusinessUnit(
-                $customerTransfer->getCompanyUserTransfer()->getFkCompanyBusinessUnitOrFail(),
+                $idCompanyBusinessUnit,
                 $currencyCode,
                 $quoteTransfer->getIsLocked() === true,
             )
             ->getCostCenters();
+    }
+
+    protected function resolveIdCompanyBusinessUnitFromCustomer(): ?int
+    {
+        $customerTransfer = $this->customerClient->getCustomer();
+
+        if (!$customerTransfer || !$customerTransfer->getCompanyUserTransfer()) {
+            return null;
+        }
+
+        return $customerTransfer->getCompanyUserTransfer()->getFkCompanyBusinessUnitOrFail();
     }
 
     public function resolveSelectedCostCenter(ArrayObject $costCenterTransfers, ?int $idCostCenter): ?CostCenterTransfer

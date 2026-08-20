@@ -1,0 +1,42 @@
+{% extends template('widget') %}
+
+{% define data = {
+    form: _widget.form,
+    selectedCostCenter: _widget.selectedCostCenter,
+    selectedBudget: _widget.selectedBudget,
+    quote: _widget.quote,
+    quoteRequestReference: _widget.quoteRequestReference,
+    isLocked: _widget.isLocked,
+    formActionRoute: _widget.formActionRoute,
+} %}
+
+{%- block template -%}
+    {% set hasContentToRender = data.isLocked
+        ? data.selectedCostCenter
+        : data.form and data.form.idCostCenter.vars.choices | length > 0 %}
+
+    {% if hasContentToRender %}
+        {{ parent() }}
+    {% endif %}
+{%- endblock -%}
+
+{% block body %}
+    <div class="box">
+        {{ block('costCenterSelector') }}
+    </div>
+{% endblock %}
+
+{% block costCenterSelector %}
+    {% include molecule('cost-center-selector', 'PurchasingControl') with {
+        data: {
+            form: data.form,
+            selectedCostCenter: data.selectedCostCenter,
+            selectedBudget: data.selectedBudget,
+            quote: data.quote,
+            isLocked: data.isLocked,
+            formAction: path(data.formActionRoute, {
+                quoteRequestReference: data.quoteRequestReference,
+            }),
+        }
+    } only %}
+{% endblock %}

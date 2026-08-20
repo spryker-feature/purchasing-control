@@ -38,9 +38,9 @@ class CostCenterSelectorFormDataProvider
     /**
      * @return array<string, mixed>
      */
-    public function getDataAndOptions(QuoteTransfer $quoteTransfer): array
+    public function getDataAndOptions(QuoteTransfer $quoteTransfer, ?int $idCompanyBusinessUnit = null): array
     {
-        $costCenterTransfers = $this->costCenterResolver->resolveCostCenters($quoteTransfer);
+        $costCenterTransfers = $this->costCenterResolver->resolveCostCenters($quoteTransfer, $idCompanyBusinessUnit);
         $selectedCostCenterTransfer = $this->costCenterResolver->resolveSelectedCostCenter($costCenterTransfers, $quoteTransfer->getIdCostCenter());
         $budgetTransfers = $selectedCostCenterTransfer?->getBudgets() ?? new ArrayObject();
         $selectedBudgetTransfer = $this->budgetResolver->resolveSelectedBudget($budgetTransfers, $quoteTransfer);
@@ -49,7 +49,7 @@ class CostCenterSelectorFormDataProvider
 
         return [
             static::KEY_DATA => $this->buildData($selectedCostCenterTransfer, $selectedBudgetTransfer),
-            static::KEY_OPTIONS => $this->buildOptions($costCenterTransfers, $budgetTransfers, $currencyCode),
+            static::KEY_OPTIONS => $this->getCostCenterBudgetOptions($costCenterTransfers, $currencyCode),
             static::KEY_SELECTED_COST_CENTER => $selectedCostCenterTransfer,
             static::KEY_SELECTED_BUDGET => $selectedBudgetTransfer,
         ];
@@ -68,17 +68,47 @@ class CostCenterSelectorFormDataProvider
 
     /**
      * @param \ArrayObject<int, \Generated\Shared\Transfer\CostCenterTransfer> $costCenterTransfers
-     * @param \ArrayObject<int, \Generated\Shared\Transfer\BudgetTransfer> $budgetTransfers
      *
      * @return array<string, mixed>
      */
-    protected function buildOptions(ArrayObject $costCenterTransfers, ArrayObject $budgetTransfers, string $currencyCode): array
+    protected function getCostCenterBudgetOptions(ArrayObject $costCenterTransfers, string $currencyCode): array
     {
+        $budgetLabels = [];
+        $budgetChoiceAttrs = [];
+        $budgetCostCenterMap = [];
+
+        foreach ($costCenterTransfers as $costCenterTransfer) {
+            $budgetTransfers = $costCenterTransfer->getBudgets();
+            $formattedRemainingAmounts = $this->formatRemainingAmounts($budgetTransfers, $currencyCode);
+
+            $budgetLabels += $this->buildBudgetLabels($budgetTransfers, $formattedRemainingAmounts);
+            $budgetChoiceAttrs += $this->buildBudgetChoiceAttrs($budgetTransfers, $formattedRemainingAmounts);
+            $budgetCostCenterMap += $this->buildBudgetCostCenterMap($budgetTransfers);
+        }
+
         return [
             CostCenterSelectorForm::OPTION_COST_CENTER_CHOICES => $this->buildCostCenterChoices($costCenterTransfers),
-            CostCenterSelectorForm::OPTION_BUDGET_CHOICES => $this->buildBudgetChoices($budgetTransfers, $currencyCode),
-            CostCenterSelectorForm::OPTION_BUDGET_CHOICE_ATTRS => $this->buildBudgetChoiceAttrs($budgetTransfers, $currencyCode),
+            CostCenterSelectorForm::OPTION_BUDGET_CHOICES => array_keys($budgetLabels),
+            CostCenterSelectorForm::OPTION_BUDGET_LABELS => $budgetLabels,
+            CostCenterSelectorForm::OPTION_BUDGET_CHOICE_ATTRS => $budgetChoiceAttrs,
+            CostCenterSelectorForm::OPTION_BUDGET_COST_CENTER_MAP => $budgetCostCenterMap,
         ];
+    }
+
+    /**
+     * @param \ArrayObject<int, \Generated\Shared\Transfer\BudgetTransfer> $budgetTransfers
+     *
+     * @return array<int, int> Keys are budget ids, values are the ids of the cost centers they belong to.
+     */
+    protected function buildBudgetCostCenterMap(ArrayObject $budgetTransfers): array
+    {
+        $budgetCostCenterMap = [];
+
+        foreach ($budgetTransfers as $budgetTransfer) {
+            $budgetCostCenterMap[$budgetTransfer->getIdBudgetOrFail()] = $budgetTransfer->getIdCostCenterOrFail();
+        }
+
+        return $budgetCostCenterMap;
     }
 
     /**
@@ -100,49 +130,67 @@ class CostCenterSelectorFormDataProvider
     /**
      * @param \ArrayObject<int, \Generated\Shared\Transfer\BudgetTransfer> $budgetTransfers
      *
-     * @return array<string, int>
+     * @return array<int, string> Keys are budget ids.
      */
-    protected function buildBudgetChoices(ArrayObject $budgetTransfers, string $currencyCode): array
+    protected function formatRemainingAmounts(ArrayObject $budgetTransfers, string $currencyCode): array
     {
-        $choices = [];
-
-        foreach ($budgetTransfers as $budgetTransfer) {
-            $label = $this->buildBudgetChoiceLabel($budgetTransfer, $currencyCode);
-            $choices[$label] = $budgetTransfer->getIdBudgetOrFail();
-        }
-
-        return $choices;
-    }
-
-    /**
-     * @param \ArrayObject<int, \Generated\Shared\Transfer\BudgetTransfer> $budgetTransfers
-     *
-     * @return array<int, array<string, int|string>>
-     */
-    protected function buildBudgetChoiceAttrs(ArrayObject $budgetTransfers, string $currencyCode): array
-    {
-        $attrs = [];
+        $formattedRemainingAmounts = [];
 
         foreach ($budgetTransfers as $budgetTransfer) {
             $moneyTransfer = (new MoneyTransfer())
                 ->setAmount((string)$budgetTransfer->getRemainingAmountOrFail())
                 ->setCurrency((new CurrencyTransfer())->setCode($currencyCode));
 
-            $attrs[$budgetTransfer->getIdBudgetOrFail()] = [
-                'data-budget-id' => $budgetTransfer->getIdBudgetOrFail(),
-                'data-remaining-amount' => $this->moneyClient->formatWithSymbol($moneyTransfer),
+            $formattedRemainingAmounts[$budgetTransfer->getIdBudgetOrFail()] = $this->moneyClient->formatWithSymbol($moneyTransfer);
+        }
+
+        return $formattedRemainingAmounts;
+    }
+
+    /**
+     * @param \ArrayObject<int, \Generated\Shared\Transfer\BudgetTransfer> $budgetTransfers
+     * @param array<int, string> $formattedRemainingAmounts
+     *
+     * @return array<int, string> Keys are budget ids.
+     */
+    protected function buildBudgetLabels(ArrayObject $budgetTransfers, array $formattedRemainingAmounts): array
+    {
+        // Keyed by id, not by label: two cost centers can hold equally named budgets.
+        $budgetLabels = [];
+
+        foreach ($budgetTransfers as $budgetTransfer) {
+            $idBudget = $budgetTransfer->getIdBudgetOrFail();
+            $budgetLabels[$idBudget] = $this->buildBudgetChoiceLabel($budgetTransfer, $formattedRemainingAmounts[$idBudget]);
+        }
+
+        return $budgetLabels;
+    }
+
+    /**
+     * @param \ArrayObject<int, \Generated\Shared\Transfer\BudgetTransfer> $budgetTransfers
+     * @param array<int, string> $formattedRemainingAmounts
+     *
+     * @return array<int, array<string, int|string>>
+     */
+    protected function buildBudgetChoiceAttrs(ArrayObject $budgetTransfers, array $formattedRemainingAmounts): array
+    {
+        $attrs = [];
+
+        foreach ($budgetTransfers as $budgetTransfer) {
+            $idBudget = $budgetTransfer->getIdBudgetOrFail();
+
+            $attrs[$idBudget] = [
+                'data-budget-id' => $idBudget,
+                'data-cost-center-id' => $budgetTransfer->getIdCostCenterOrFail(),
+                'data-remaining-amount' => $formattedRemainingAmounts[$idBudget],
             ];
         }
 
         return $attrs;
     }
 
-    protected function buildBudgetChoiceLabel(BudgetTransfer $budgetTransfer, string $currencyCode): string
+    protected function buildBudgetChoiceLabel(BudgetTransfer $budgetTransfer, string $formattedRemainingAmount): string
     {
-        $moneyTransfer = (new MoneyTransfer())
-            ->setAmount((string)$budgetTransfer->getRemainingAmountOrFail())
-            ->setCurrency((new CurrencyTransfer())->setCode($currencyCode));
-
-        return sprintf('%s (%s)', $budgetTransfer->getNameOrFail(), $this->moneyClient->formatWithSymbol($moneyTransfer));
+        return sprintf('%s (%s)', $budgetTransfer->getNameOrFail(), $formattedRemainingAmount);
     }
 }

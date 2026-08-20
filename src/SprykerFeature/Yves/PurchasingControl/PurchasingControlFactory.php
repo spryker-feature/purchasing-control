@@ -11,12 +11,15 @@ use Generated\Shared\Transfer\BudgetTransfer;
 use Generated\Shared\Transfer\CostCenterTransfer;
 use Generated\Shared\Transfer\QuoteTransfer;
 use Spryker\Client\CompanyBusinessUnit\CompanyBusinessUnitClientInterface;
+use Spryker\Client\CompanyUser\CompanyUserClientInterface;
 use Spryker\Client\Currency\CurrencyClientInterface;
 use Spryker\Client\Customer\CustomerClientInterface;
 use Spryker\Client\GlossaryStorage\GlossaryStorageClientInterface;
 use Spryker\Client\Locale\LocaleClientInterface;
 use Spryker\Client\Money\MoneyClientInterface;
 use Spryker\Client\Quote\QuoteClientInterface;
+use Spryker\Client\QuoteRequest\QuoteRequestClientInterface;
+use Spryker\Client\QuoteRequestAgent\QuoteRequestAgentClientInterface;
 use Spryker\Client\Store\StoreClientInterface;
 use Spryker\Service\UtilEncoding\UtilEncodingServiceInterface;
 use Spryker\Shared\Application\ApplicationConstants;
@@ -46,16 +49,22 @@ use SprykerFeature\Yves\PurchasingControl\Form\Handler\CostCenterOrderSearchForm
 use SprykerFeature\Yves\PurchasingControl\Form\Handler\CostCenterSearchFormHandler;
 use SprykerFeature\Yves\PurchasingControl\Formatter\BudgetSummaryFormatter;
 use SprykerFeature\Yves\PurchasingControl\Formatter\BudgetSummaryFormatterInterface;
+use SprykerFeature\Yves\PurchasingControl\Reader\AgentQuoteRequestReader;
 use SprykerFeature\Yves\PurchasingControl\Reader\BudgetReader;
 use SprykerFeature\Yves\PurchasingControl\Reader\BudgetReaderInterface;
+use SprykerFeature\Yves\PurchasingControl\Reader\CompanyUserQuoteRequestReader;
 use SprykerFeature\Yves\PurchasingControl\Reader\CostCenterReader;
 use SprykerFeature\Yves\PurchasingControl\Reader\CostCenterReaderInterface;
 use SprykerFeature\Yves\PurchasingControl\Reader\CostCenterSummaryReader;
 use SprykerFeature\Yves\PurchasingControl\Reader\CostCenterSummaryReaderInterface;
+use SprykerFeature\Yves\PurchasingControl\Reader\QuoteRequestReaderInterface;
 use SprykerFeature\Yves\PurchasingControl\Resolver\BudgetResolver;
 use SprykerFeature\Yves\PurchasingControl\Resolver\BudgetResolverInterface;
 use SprykerFeature\Yves\PurchasingControl\Resolver\CostCenterResolver;
 use SprykerFeature\Yves\PurchasingControl\Resolver\CostCenterResolverInterface;
+use SprykerFeature\Yves\PurchasingControl\Writer\AgentQuoteRequestCostCenterWriter;
+use SprykerFeature\Yves\PurchasingControl\Writer\QuoteRequestCostCenterWriter;
+use SprykerFeature\Yves\PurchasingControl\Writer\QuoteRequestCostCenterWriterInterface;
 use Symfony\Component\Form\FormFactory;
 use Symfony\Component\Form\FormInterface;
 
@@ -65,10 +74,10 @@ use Symfony\Component\Form\FormInterface;
  */
 class PurchasingControlFactory extends AbstractFactory
 {
-    public function createCostCenterSelectorForm(QuoteTransfer $quoteTransfer): FormInterface
+    public function createCostCenterSelectorForm(QuoteTransfer $quoteTransfer, ?int $idCompanyBusinessUnit = null): FormInterface
     {
         $dataProvider = $this->createCostCenterSelectorFormDataProvider();
-        $dataAndOptions = $dataProvider->getDataAndOptions($quoteTransfer);
+        $dataAndOptions = $dataProvider->getDataAndOptions($quoteTransfer, $idCompanyBusinessUnit);
 
         return $this->getFormFactory()->create(
             CostCenterSelectorForm::class,
@@ -127,6 +136,29 @@ class PurchasingControlFactory extends AbstractFactory
         );
     }
 
+    public function createCompanyUserQuoteRequestReader(): QuoteRequestReaderInterface
+    {
+        return new CompanyUserQuoteRequestReader(
+            $this->getCompanyUserClient(),
+            $this->getQuoteRequestClient(),
+        );
+    }
+
+    public function createQuoteRequestCostCenterWriter(): QuoteRequestCostCenterWriterInterface
+    {
+        return new QuoteRequestCostCenterWriter($this->getQuoteRequestClient());
+    }
+
+    public function createAgentQuoteRequestReader(): QuoteRequestReaderInterface
+    {
+        return new AgentQuoteRequestReader($this->getQuoteRequestAgentClient());
+    }
+
+    public function createAgentQuoteRequestCostCenterWriter(): QuoteRequestCostCenterWriterInterface
+    {
+        return new AgentQuoteRequestCostCenterWriter($this->getQuoteRequestAgentClient());
+    }
+
     public function getPurchasingControlClient(): PurchasingControlClientInterface
     {
         return $this->getClient();
@@ -140,6 +172,21 @@ class PurchasingControlFactory extends AbstractFactory
     public function getCustomerClient(): CustomerClientInterface
     {
         return $this->getProvidedDependency(PurchasingControlDependencyProvider::CLIENT_CUSTOMER);
+    }
+
+    public function getCompanyUserClient(): CompanyUserClientInterface
+    {
+        return $this->getProvidedDependency(PurchasingControlDependencyProvider::CLIENT_COMPANY_USER);
+    }
+
+    public function getQuoteRequestClient(): QuoteRequestClientInterface
+    {
+        return $this->getProvidedDependency(PurchasingControlDependencyProvider::CLIENT_QUOTE_REQUEST);
+    }
+
+    public function getQuoteRequestAgentClient(): QuoteRequestAgentClientInterface
+    {
+        return $this->getProvidedDependency(PurchasingControlDependencyProvider::CLIENT_QUOTE_REQUEST_AGENT);
     }
 
     public function getQuoteClient(): QuoteClientInterface

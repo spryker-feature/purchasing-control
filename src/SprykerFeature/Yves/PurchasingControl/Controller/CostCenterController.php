@@ -75,7 +75,7 @@ class CostCenterController extends AbstractController
         return (new CostCenterQuoteUpdateRequestTransfer())
             ->setIdQuote($quoteTransfer->getIdQuoteOrFail())
             ->setIdCostCenter($formData[CostCenterSelectorForm::FIELD_ID_COST_CENTER])
-            ->setIdBudget($quoteTransfer->getIdCostCenter() !== $formData[CostCenterSelectorForm::FIELD_ID_COST_CENTER] ? null : $formData[CostCenterSelectorForm::FIELD_ID_BUDGET])
+            ->setIdBudget($formData[CostCenterSelectorForm::FIELD_ID_BUDGET])
             ->setCustomer($this->getFactory()->getCustomerClient()->getCustomer());
     }
 

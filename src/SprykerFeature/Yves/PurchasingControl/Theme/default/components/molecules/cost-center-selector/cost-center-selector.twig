@@ -11,7 +11,10 @@
     selectedBudget: null,
     quote: required,
     isLocked: required,
+    formAction: null,
 } %}
+
+{% set formAction = data.formAction ?: path('company/cost-center/update-quote') %}
 
 {% block body %}
     {% block title %}
@@ -48,37 +51,41 @@
 {% endblock %}
 
 {% block cost_center_selector_form %}
-    {{ form_start(data.form, {'action': path('company/cost-center/update-quote')}) }}
+    {{ form_start(data.form, {'action': formAction}) }}
     {{ block('cost_center_field') }}
     {{ block('budget_field') }}
+    {{ block('apply_field') }}
     {{ form_end(data.form) }}
 {% endblock %}
 
 {% block cost_center_field %}
+    {% set costCenterAttributes = data.form.idCostCenter.vars.attr | merge({
+        'class': "#{data.form.idCostCenter.vars.attr.class | default('')} #{config.jsName}__cost-center-control",
+    }) %}
+
     <div class="spacing-bottom">
-        {{ form_row(data.form.idCostCenter) }}
+        {{ form_row(data.form.idCostCenter, { 'attr': costCenterAttributes }) }}
     </div>
 {% endblock %}
 
 {% block budget_field %}
-    {% if not data.selectedCostCenter %}
-        {% do data.form.idBudget.setRendered() %}
-        {% do data.form.apply.setRendered() %}
-    {% elseif data.form.idBudget.vars.choices | length > 0 %}
-        <div class="spacing-bottom">
+    {% if data.form.idBudget.vars.choices | length > 0 %}
+        <div class="spacing-bottom {{ config.jsName }}__budget-field-row">
             {{ form_widget(data.form.idBudget, { 'attr': {'class': "#{config.jsName}__budget-control"} }) }}
         </div>
-        {% if data.selectedBudget %}
-            <div class="spacing-bottom">
-                {{ 'purchasing_control.budget.remaining' | trans }}:
-                <strong class="{{ config.jsName }}__budget-remaining">{{ data.selectedBudget.remainingAmount | money(true, data.quote.currency.code) }}</strong>
-            </div>
-        {% endif %}
+        <div class="spacing-bottom {{ config.jsName }}__budget-remaining-row{{ data.selectedBudget ? '' : ' is-hidden' }}">
+            {{ 'purchasing_control.budget.remaining' | trans }}:
+            <strong class="{{ config.jsName }}__budget-remaining">{{ data.selectedBudget ? data.selectedBudget.remainingAmount | money(true, data.quote.currency.code) : '' }}</strong>
+        </div>
         <div class="{{ config.jsName }}__apply-warning text-alert is-hidden">{{ 'purchasing_control.budget.apply_warning' | trans }}</div>
-        {{ form_widget(data.form.apply) }}
+        {# The select offers the budgets of every cost center, so this covers a cost center filtered down to none. #}
+        <p class="{{ config.jsName }}__no-budgets is-hidden">{{ 'purchasing_control.budget.no_budgets_found' | trans }}</p>
     {% else %}
         {% do data.form.idBudget.setRendered() %}
-        {% do data.form.apply.setRendered() %}
         <p>{{ 'purchasing_control.budget.no_budgets_found' | trans }}</p>
     {% endif %}
+{% endblock %}
+
+{% block apply_field %}
+    {{ form_widget(data.form.apply) }}
 {% endblock %}
