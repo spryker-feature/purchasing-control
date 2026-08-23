@@ -244,7 +244,6 @@ class PurchasingControlBusinessTester extends Actor
         $configStub = Stub::make(PurchasingControlConfig::class, [$methodName => $return]);
 
         $property = new ReflectionProperty(BundleConfigMock::class, 'bundleConfigMocks');
-        $property->setAccessible(true);
         $mocks = $property->getValue(null) ?? [];
         $mocks[PurchasingControlConfig::class] = $configStub;
         $property->setValue(null, $mocks);
@@ -258,7 +257,6 @@ class PurchasingControlBusinessTester extends Actor
     protected function resetResolvedInstanceCache(): void
     {
         $property = new ReflectionProperty(AbstractClassResolver::class, 'cachedInstances');
-        $property->setAccessible(true);
         $property->setValue(null, []);
     }
 }
