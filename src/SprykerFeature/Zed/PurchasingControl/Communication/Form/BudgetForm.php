@@ -8,12 +8,12 @@
 namespace SprykerFeature\Zed\PurchasingControl\Communication\Form;
 
 use DateTime;
+use Spryker\Zed\Gui\Communication\Form\Type\DatePickerType;
 use Spryker\Zed\Kernel\Communication\Form\AbstractType;
 use SprykerFeature\Shared\PurchasingControl\PurchasingControlConfig;
 use Symfony\Component\Form\CallbackTransformer;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -39,6 +39,8 @@ class BudgetForm extends AbstractType
     public const string FIELD_ENFORCEMENT_RULE = 'enforcementRule';
 
     public const string FIELD_IS_ACTIVE = 'isActive';
+
+    protected const string RANGE_GROUP_VALIDITY = 'purchasing-control-budget-validity';
 
     public const string OPTION_CURRENCY_CHOICES = 'currency_choices';
 
@@ -118,10 +120,11 @@ class BudgetForm extends AbstractType
 
     protected function addStartsAtField(FormBuilderInterface $builder): static
     {
-        $builder->add(static::FIELD_STARTS_AT, DateType::class, [
+        $builder->add(static::FIELD_STARTS_AT, DatePickerType::class, [
             'label' => 'Start date',
-            'widget' => 'single_text',
             'input' => 'string',
+            'range_group' => static::RANGE_GROUP_VALIDITY,
+            'range_role' => DatePickerType::RANGE_ROLE_START,
             'constraints' => [new NotBlank()],
             'attr' => ['data-qa' => 'budget-starts-at'],
         ]);
@@ -131,10 +134,12 @@ class BudgetForm extends AbstractType
 
     protected function addEndsAtField(FormBuilderInterface $builder): static
     {
-        $builder->add(static::FIELD_ENDS_AT, DateType::class, [
+        $builder->add(static::FIELD_ENDS_AT, DatePickerType::class, [
             'label' => 'End date',
-            'widget' => 'single_text',
             'input' => 'string',
+            'range_group' => static::RANGE_GROUP_VALIDITY,
+            'range_role' => DatePickerType::RANGE_ROLE_END,
+            'min_date' => DatePickerType::DATE_TODAY,
             'constraints' => [
                 new NotBlank(),
                 new GreaterThanOrEqual([
@@ -142,7 +147,7 @@ class BudgetForm extends AbstractType
                     'message' => 'purchasing_control.budget.validation.end_date_in_past',
                 ]),
             ],
-            'attr' => ['data-qa' => 'budget-ends-at', 'min' => (new DateTime('today'))->format('Y-m-d')],
+            'attr' => ['data-qa' => 'budget-ends-at'],
         ]);
 
         return $this;
