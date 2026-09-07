@@ -1,6 +1,7 @@
 @use 'sass:meta';
 @use 'sass:color';
 @use 'sass:map';
+
 @mixin purchasing-control-recurring-order-budget-summary($name: '.recurring-order-budget-summary') {
     #{$name} {
         @if meta.mixin-exists(purchasing-control-recurring-order-budget-summary-base-hook) {
