@@ -75,6 +75,8 @@ use SprykerFeature\Zed\PurchasingControl\Business\Order\CostCenterOrderSaver;
 use SprykerFeature\Zed\PurchasingControl\Business\Order\CostCenterOrderSaverInterface;
 use SprykerFeature\Zed\PurchasingControl\Business\Order\OrderSearchQueryExpander;
 use SprykerFeature\Zed\PurchasingControl\Business\Order\OrderSearchQueryExpanderInterface;
+use SprykerFeature\Zed\PurchasingControl\Business\Quote\BudgetOrderIntakeQuoteExpander;
+use SprykerFeature\Zed\PurchasingControl\Business\Quote\BudgetOrderIntakeQuoteExpanderInterface;
 use SprykerFeature\Zed\PurchasingControl\Business\Quote\CostCenterQuoteExpander;
 use SprykerFeature\Zed\PurchasingControl\Business\Quote\CostCenterQuoteExpanderInterface;
 use SprykerFeature\Zed\PurchasingControl\Business\Quote\CostCenterQuoteUpdater;
@@ -294,6 +296,11 @@ class PurchasingControlBusinessFactory extends AbstractBusinessFactory
     public function createBudgetReader(): BudgetReaderInterface
     {
         return new BudgetReader($this->getRepository());
+    }
+
+    public function createBudgetOrderIntakeQuoteExpander(): BudgetOrderIntakeQuoteExpanderInterface
+    {
+        return new BudgetOrderIntakeQuoteExpander($this->createBudgetReader());
     }
 
     public function createCostCenterOrderExpander(): CostCenterOrderExpanderInterface

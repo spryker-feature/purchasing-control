@@ -50,7 +50,7 @@
         "spryker/testify": "*"
     },
     "suggest": {
-        "spryker-feature/order-experience-management": "Enables cost center selection in recurring order approve and schedule edit forms, and blocks recurring order checkout for budgets that require approval. Install this feature to use the plugins under `Yves/PurchasingControl/Plugin/OrderExperienceManagement` and `Zed/PurchasingControl/Communication/Plugin/OrderExperienceManagement`.",
+        "spryker-feature/order-experience-management": "Enables cost center selection in recurring order approve and schedule edit forms, blocks recurring order checkout for budgets that require approval, and adds the `budgetUuid` field to order intake so an intaken order can be charged against a budget. Install this feature to use the plugins under `Yves/PurchasingControl/Plugin/OrderExperienceManagement` and `Zed/PurchasingControl/Communication/Plugin/OrderExperienceManagement`.",
         "spryker-shop/company-page": "Use this module if you want to display company information on the storefront.",
         "spryker-shop/customer-page": "Use this module if you want to display customer information on the storefront.",
         "spryker-shop/quote-request-agent-page": "Add the module if you want to use QuoteRequestAgentCostCenterSelectorWidget on the agent quote request details and edit pages: ^3.7.0",

@@ -165,6 +165,10 @@
         <property name="errors" type="Error[]" singular="error"/>
     </transfer>
 
+    <transfer name="OrderIntakeRequest" strict="true">
+        <property name="budgetUuid" type="string"/>
+    </transfer>
+
     <transfer name="Quote">
         <property name="idCostCenter" type="int"/>
         <property name="idBudget" type="int"/>
@@ -420,6 +424,15 @@
 
     <transfer name="RecurringScheduleEventRequest" strict="true">
         <property name="quote" type="Quote"/>
+    </transfer>
+
+    <transfer name="OrderIntakeResponse" strict="true">
+        <property name="validationIssues" type="OrderIntakeValidationIssue[]" singular="validationIssue"/>
+    </transfer>
+
+    <transfer name="OrderIntakeValidationIssue" strict="true">
+        <property name="field" type="string"/>
+        <property name="message" type="string"/>
     </transfer>
 
 </transfers>

@@ -13,6 +13,7 @@ The Purchasing Control feature extends Spryker's B2B Company Account and Approva
 - **Budget Lifecycle** — Budget balance is consumed on order confirmation and restored on cancellation or return.
 - **Spend Reporting** — Back Office dashboard showing spend vs. budget per cost center, with filtering by time range, cost center, or buyer, and CSV export.
 - **Audit Log** — All cost center, budget, and approval events are recorded with timestamps and actor identity for compliance and finance review.
+- **Backend API Integration** — Orders created through the OrderExperienceManagement Backend API (`POST /orders`) can be charged against a budget by passing `budgetUuid`; the resulting assignment is reported back as `budget` on order reads.
 
 ## Validation Outcomes at Checkout
 

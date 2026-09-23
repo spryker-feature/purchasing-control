@@ -1,0 +1,43 @@
+resource:
+    name: Orders
+    shortName: orders
+    description: 'Sales order resource for the Backend API — read, list, and create (intake) placed orders.'
+    properties:
+        budgetUuid:
+            type: string
+            writable: true
+            readable: false
+            description: 'Optional. Purchasing budget to charge this order against. Must be active with sufficient balance, or the order is rejected. The resolved assignment is read back via `budget`, not this field.'
+            openapiContext:
+                example: ''
+
+        budget:
+            type: object
+            objectName: OrdersBudget
+            readable: true
+            writable: false
+            nullable: true
+            description: 'The Purchasing budget this order was charged against. `null` when no `budgetUuid` was accepted at placement.'
+            properties:
+                uuid:
+                    type: string
+                    readable: true
+                    openapiContext: { example: '3fa85f64-5717-4562-b3fc-2c963f66afa6' }
+                name:
+                    type: string
+                    readable: true
+                    openapiContext: { example: 'Marketing Q2 2025' }
+                amount:
+                    type: int
+                    readable: true
+                    description: 'Total budget amount, in cents.'
+                currencyIsoCode:
+                    type: string
+                    readable: true
+                    openapiContext: { example: 'EUR' }
+                startsAt:
+                    type: string
+                    readable: true
+                endsAt:
+                    type: string
+                    readable: true
