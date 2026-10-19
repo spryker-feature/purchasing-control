@@ -19,7 +19,9 @@ class CollectionIndexOperations
      */
     public function splitByInvalidIndices(ArrayObject $itemTransfers, array $invalidIndices): array
     {
+        /** @var \ArrayObject<int, mixed> $validItemTransfers */
         $validItemTransfers = new ArrayObject();
+        /** @var \ArrayObject<int, mixed> $invalidItemTransfers */
         $invalidItemTransfers = new ArrayObject();
 
         foreach ($itemTransfers as $index => $itemTransfer) {
@@ -43,6 +45,7 @@ class CollectionIndexOperations
      */
     public function mergeItems(ArrayObject $validItemTransfers, ArrayObject $invalidItemTransfers): ArrayObject
     {
+        /** @var \ArrayObject<int, mixed> $mergedTransfers */
         $mergedTransfers = new ArrayObject();
 
         foreach ($validItemTransfers as $index => $itemTransfer) {

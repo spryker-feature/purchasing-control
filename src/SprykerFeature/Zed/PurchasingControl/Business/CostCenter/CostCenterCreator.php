@@ -60,6 +60,7 @@ class CostCenterCreator implements CostCenterCreatorInterface
      */
     protected function executeCreateCostCenterCollectionTransaction(ArrayObject $costCenterTransfers): ArrayObject
     {
+        /** @var \ArrayObject<int, \Generated\Shared\Transfer\CostCenterTransfer> $persistedTransfers */
         $persistedTransfers = new ArrayObject();
 
         foreach ($costCenterTransfers as $index => $costCenterTransfer) {

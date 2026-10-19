@@ -60,6 +60,7 @@ class CostCenterUpdater implements CostCenterUpdaterInterface
      */
     protected function executeUpdateCostCenterCollectionTransaction(ArrayObject $costCenterTransfers): ArrayObject
     {
+        /** @var \ArrayObject<int, \Generated\Shared\Transfer\CostCenterTransfer> $persistedTransfers */
         $persistedTransfers = new ArrayObject();
 
         foreach ($costCenterTransfers as $index => $costCenterTransfer) {

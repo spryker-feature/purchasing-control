@@ -60,6 +60,7 @@ class BudgetUpdater implements BudgetUpdaterInterface
      */
     protected function executeUpdateBudgetCollectionTransaction(ArrayObject $budgetTransfers): ArrayObject
     {
+        /** @var \ArrayObject<int, \Generated\Shared\Transfer\BudgetTransfer> $persistedTransfers */
         $persistedTransfers = new ArrayObject();
 
         foreach ($budgetTransfers as $index => $budgetTransfer) {

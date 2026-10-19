@@ -60,6 +60,7 @@ class BudgetCreator implements BudgetCreatorInterface
      */
     protected function executeCreateBudgetCollectionTransaction(ArrayObject $budgetTransfers): ArrayObject
     {
+        /** @var \ArrayObject<int, \Generated\Shared\Transfer\BudgetTransfer> $persistedTransfers */
         $persistedTransfers = new ArrayObject();
 
         foreach ($budgetTransfers as $index => $budgetTransfer) {
