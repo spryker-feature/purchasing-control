@@ -84,7 +84,7 @@ class UpdateQuoteCostCenterTest extends Unit
         $this->tester->setDependency(PurchasingControlDependencyProvider::FACADE_QUOTE, $quoteFacadeMock);
 
         $requestTransfer = (new CostCenterQuoteUpdateRequestTransfer())
-            ->setIdQuote(PHP_INT_MAX)
+            ->setIdQuote(999999999)
             ->setIdCostCenter(1);
 
         // Act
