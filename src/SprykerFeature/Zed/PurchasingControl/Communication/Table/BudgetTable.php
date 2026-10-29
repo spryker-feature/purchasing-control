@@ -40,11 +40,11 @@ class BudgetTable extends AbstractTable
 
     protected const string LABEL_ACTIVE = 'Active';
 
-    protected const string LABEL_INACTIVE = 'Deactivated';
+    protected const string LABEL_INACTIVE = 'Inactive';
 
     protected const string LABEL_CLASS_ACTIVE = 'label-success';
 
-    protected const string LABEL_CLASS_INACTIVE = 'label-danger';
+    protected const string LABEL_CLASS_INACTIVE = 'badge-outline-dark';
 
     protected const string LABEL_CLASS_RULE_BLOCK = 'label-danger';
 
