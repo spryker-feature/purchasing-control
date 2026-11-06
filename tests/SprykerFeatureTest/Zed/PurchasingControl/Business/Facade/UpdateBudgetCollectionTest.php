@@ -53,6 +53,10 @@ class UpdateBudgetCollectionTest extends Unit
 
     protected const string COMPANY_BUSINESS_UNIT = 'companyBusinessUnit';
 
+    protected const string ORIGINAL_BUDGET_NAME = 'Original budget name';
+
+    protected const string UPDATED_BUDGET_NAME = 'Updated budget name';
+
     protected PurchasingControlBusinessTester $tester;
 
     protected function setUp(): void
@@ -89,6 +93,35 @@ class UpdateBudgetCollectionTest extends Unit
         /** @var \Generated\Shared\Transfer\BudgetTransfer $persistedBudget */
         $persistedBudget = $persistedCollection->getBudgets()->getIterator()->current();
         $this->assertSame($updatedAmount, $persistedBudget->getAmount());
+    }
+
+    public function testGivenAnExistingBudgetWhenUpdateBudgetCollectionWithANewNameThenTheNewNameIsPersisted(): void
+    {
+        // Arrange
+        $costCenterTransfer = $this->tester->haveCostCenter();
+        $budgetTransfer = $this->tester->haveBudget($costCenterTransfer->getIdCostCenterOrFail(), [
+            BudgetTransfer::NAME => static::ORIGINAL_BUDGET_NAME,
+        ]);
+        $budgetTransfer->setName(static::UPDATED_BUDGET_NAME);
+
+        $budgetCollectionRequestTransfer = (new BudgetCollectionRequestTransfer())
+            ->addBudget($budgetTransfer)
+            ->setIsTransactional(true);
+
+        // Act
+        $budgetCollectionResponseTransfer = $this->tester->getFacade()
+            ->updateBudgetCollection($budgetCollectionRequestTransfer);
+
+        // Assert
+        $this->assertCount(0, $budgetCollectionResponseTransfer->getErrors());
+
+        $budgetCollectionTransfer = $this->tester->getFacade()->getBudgetCollection(new BudgetCriteriaTransfer());
+
+        $this->assertCount(1, $budgetCollectionTransfer->getBudgets());
+
+        /** @var \Generated\Shared\Transfer\BudgetTransfer $persistedBudgetTransfer */
+        $persistedBudgetTransfer = $budgetCollectionTransfer->getBudgets()->getIterator()->current();
+        $this->assertSame(static::UPDATED_BUDGET_NAME, $persistedBudgetTransfer->getName());
     }
 
     public function testDeactivateBudgetViaUpdate(): void

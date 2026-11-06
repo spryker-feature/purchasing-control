@@ -15,6 +15,7 @@ use Generated\Shared\Transfer\BudgetCriteriaTransfer;
 use Generated\Shared\Transfer\CompanyBusinessUnitTransfer;
 use Generated\Shared\Transfer\CompanyUserTransfer;
 use Generated\Shared\Transfer\CostCenterCollectionRequestTransfer;
+use Generated\Shared\Transfer\CostCenterConditionsTransfer;
 use Generated\Shared\Transfer\CostCenterCriteriaTransfer;
 use Generated\Shared\Transfer\CostCenterTransfer;
 use Generated\Shared\Transfer\CustomerTransfer;
@@ -54,6 +55,10 @@ class UpdateCostCenterCollectionTest extends Unit
     protected const string GLOSSARY_KEY_VALIDATION_BUSINESS_UNIT_EMPTY = 'purchasing_control.cost_center.validation.business_unit_empty';
 
     protected const string COMPANY_BUSINESS_UNIT = 'companyBusinessUnit';
+
+    protected const string ORIGINAL_COST_CENTER_NAME = 'Original cost center name';
+
+    protected const string UPDATED_COST_CENTER_NAME = 'Updated cost center name';
 
     protected PurchasingControlBusinessTester $tester;
 
@@ -97,6 +102,54 @@ class UpdateCostCenterCollectionTest extends Unit
 
         // Assert
         $this->assertCount(0, $costCenterCollectionResponseTransfer->getErrors());
+    }
+
+    public function testGivenAnExistingCostCenterWhenUpdateCostCenterCollectionWithANewNameThenTheNewNameIsPersisted(): void
+    {
+        // Arrange
+        $companyTransfer = $this->tester->haveCompany();
+        $companyBusinessUnitTransfer = $this->tester->haveCompanyBusinessUnit([
+            CompanyBusinessUnitTransfer::FK_COMPANY => $companyTransfer->getIdCompany(),
+            CompanyBusinessUnitTransfer::COMPANY => $companyTransfer,
+        ]);
+
+        $existingCostCenterTransfer = $this->tester->haveCostCenter([
+            CostCenterTransfer::NAME => static::ORIGINAL_COST_CENTER_NAME,
+            static::COMPANY_BUSINESS_UNIT => $companyBusinessUnitTransfer,
+        ]);
+
+        $costCenterTransfer = (new CostCenterTransfer())
+            ->setIdCostCenter($existingCostCenterTransfer->getIdCostCenterOrFail())
+            ->setName(static::UPDATED_COST_CENTER_NAME)
+            ->addIdCompanyBusinessUnit($companyBusinessUnitTransfer->getIdCompanyBusinessUnitOrFail());
+
+        $costCenterCollectionRequestTransfer = (new CostCenterCollectionRequestTransfer())
+            ->setIsTransactional(true)
+            ->addCostCenter($costCenterTransfer)
+            ->setCustomer(
+                (new CustomerTransfer())->setCompanyUserTransfer(
+                    (new CompanyUserTransfer())->setFkCompany($companyTransfer->getIdCompanyOrFail()),
+                ),
+            );
+
+        // Act
+        $costCenterCollectionResponseTransfer = $this->tester->getFacade()
+            ->updateCostCenterCollection($costCenterCollectionRequestTransfer);
+
+        // Assert
+        $this->assertCount(0, $costCenterCollectionResponseTransfer->getErrors());
+
+        $persistedCostCenterCollectionTransfer = $this->tester->getFacade()->getCostCenterCollection(
+            (new CostCenterCriteriaTransfer())->setCostCenterConditions(
+                (new CostCenterConditionsTransfer())->addIdCostCenter($existingCostCenterTransfer->getIdCostCenterOrFail()),
+            ),
+        );
+
+        $this->assertCount(1, $persistedCostCenterCollectionTransfer->getCostCenters());
+
+        /** @var \Generated\Shared\Transfer\CostCenterTransfer $persistedCostCenterTransfer */
+        $persistedCostCenterTransfer = $persistedCostCenterCollectionTransfer->getCostCenters()->getIterator()->current();
+        $this->assertSame(static::UPDATED_COST_CENTER_NAME, $persistedCostCenterTransfer->getName());
     }
 
     public function testUpdateFailsWhenCostCenterBelongsToAnotherCompany(): void

@@ -332,6 +332,7 @@
     </transfer>
 
     <transfer name="Company">
+        <property name="idCompany" type="int"/>
         <property name="name" type="string"/>
         <property name="uuid" type="string"/>
     </transfer>
