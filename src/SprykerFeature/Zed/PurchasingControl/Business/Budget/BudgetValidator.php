@@ -39,43 +39,34 @@ class BudgetValidator implements BudgetValidatorInterface
      */
     public function validateBudget(BudgetTransfer $budgetTransfer, ?int $idCompany = null): array
     {
-        $errors = [];
         $entityIdentifier = (string)$budgetTransfer->getIdBudget();
 
         if ($idCompany !== null && $this->isExistingBudgetAccessDenied($budgetTransfer, $idCompany)) {
-            return [(new ErrorTransfer())
-                ->setMessage(static::GLOSSARY_KEY_VALIDATION_ACCESS_DENIED)
-                ->setEntityIdentifier($entityIdentifier)];
+            return [$this->createError(static::GLOSSARY_KEY_VALIDATION_ACCESS_DENIED, $entityIdentifier)];
         }
 
-        if ($budgetTransfer->getAmount() === null || $budgetTransfer->getAmount() <= 0) {
-            $errors[] = (new ErrorTransfer())
-                ->setMessage(static::GLOSSARY_KEY_VALIDATION_AMOUNT_INVALID)
-                ->setEntityIdentifier($entityIdentifier);
+        $glossaryKeys = [];
+
+        if ($this->isAmountInvalid($budgetTransfer)) {
+            $glossaryKeys[] = static::GLOSSARY_KEY_VALIDATION_AMOUNT_INVALID;
         }
 
-        if ($budgetTransfer->getCurrencyIsoCode() === null || strlen($budgetTransfer->getCurrencyIsoCode()) !== 3) {
-            $errors[] = (new ErrorTransfer())
-                ->setMessage(static::GLOSSARY_KEY_VALIDATION_CURRENCY_INVALID)
-                ->setEntityIdentifier($entityIdentifier);
+        if ($this->isCurrencyInvalid($budgetTransfer)) {
+            $glossaryKeys[] = static::GLOSSARY_KEY_VALIDATION_CURRENCY_INVALID;
         }
 
         if ($this->isExistingBudgetCurrencyChanged($budgetTransfer)) {
-            $errors[] = (new ErrorTransfer())
-                ->setMessage(static::GLOSSARY_KEY_VALIDATION_CURRENCY_CHANGED)
-                ->setEntityIdentifier($entityIdentifier);
+            $glossaryKeys[] = static::GLOSSARY_KEY_VALIDATION_CURRENCY_CHANGED;
         }
 
-        if (
-            $budgetTransfer->getStartsAt() !== null && $budgetTransfer->getEndsAt() !== null
-            && $budgetTransfer->getStartsAt() >= $budgetTransfer->getEndsAt()
-        ) {
-            $errors[] = (new ErrorTransfer())
-                ->setMessage(static::GLOSSARY_KEY_VALIDATION_DATE_RANGE_INVALID)
-                ->setEntityIdentifier($entityIdentifier);
+        if ($this->isDateRangeInvalid($budgetTransfer)) {
+            $glossaryKeys[] = static::GLOSSARY_KEY_VALIDATION_DATE_RANGE_INVALID;
         }
 
-        return $errors;
+        return array_map(
+            fn (string $glossaryKey): ErrorTransfer => $this->createError($glossaryKey, $entityIdentifier),
+            $glossaryKeys,
+        );
     }
 
     /**
@@ -103,6 +94,30 @@ class BudgetValidator implements BudgetValidatorInterface
         }
 
         return $invalidIndices;
+    }
+
+    protected function createError(string $glossaryKey, string $entityIdentifier): ErrorTransfer
+    {
+        return (new ErrorTransfer())
+            ->setMessage($glossaryKey)
+            ->setEntityIdentifier($entityIdentifier);
+    }
+
+    protected function isAmountInvalid(BudgetTransfer $budgetTransfer): bool
+    {
+        return $budgetTransfer->getAmount() === null || $budgetTransfer->getAmount() <= 0;
+    }
+
+    protected function isCurrencyInvalid(BudgetTransfer $budgetTransfer): bool
+    {
+        return $budgetTransfer->getCurrencyIsoCode() === null || strlen($budgetTransfer->getCurrencyIsoCode()) !== 3;
+    }
+
+    protected function isDateRangeInvalid(BudgetTransfer $budgetTransfer): bool
+    {
+        return $budgetTransfer->getStartsAt() !== null
+            && $budgetTransfer->getEndsAt() !== null
+            && $budgetTransfer->getStartsAt() >= $budgetTransfer->getEndsAt();
     }
 
     protected function isExistingBudgetAccessDenied(BudgetTransfer $budgetTransfer, int $idCompany): bool

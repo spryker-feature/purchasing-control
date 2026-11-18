@@ -10,14 +10,12 @@ declare(strict_types=1);
 namespace SprykerFeature\Yves\PurchasingControl\Expander;
 
 use Generated\Shared\Transfer\CostCenterCollectionTransfer;
-use Generated\Shared\Transfer\CostCenterTransfer;
 use Generated\Shared\Transfer\QuoteTransfer;
 use Generated\Shared\Transfer\RecurringScheduleTransfer;
 use Spryker\Client\Currency\CurrencyClientInterface;
 use Spryker\Client\Customer\CustomerClientInterface;
 use Spryker\Service\UtilEncoding\UtilEncodingServiceInterface;
-use SprykerFeature\Yves\PurchasingControl\Formatter\BudgetSummaryFormatterInterface;
-use SprykerFeature\Yves\PurchasingControl\PurchasingControlConfig;
+use SprykerFeature\Yves\PurchasingControl\Builder\CostCenterBudgetChoiceBuilderInterface;
 use SprykerFeature\Yves\PurchasingControl\Reader\CostCenterReaderInterface;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -59,10 +57,9 @@ class CostCenterBudgetFormFieldExpander implements CostCenterBudgetFormFieldExpa
     public function __construct(
         protected readonly CustomerClientInterface $customerClient,
         protected readonly CostCenterReaderInterface $costCenterReader,
-        protected readonly BudgetSummaryFormatterInterface $budgetSummaryFormatter,
         protected readonly UtilEncodingServiceInterface $utilEncodingService,
         protected readonly CurrencyClientInterface $currencyClient,
-        protected readonly PurchasingControlConfig $purchasingControlConfig,
+        protected readonly CostCenterBudgetChoiceBuilderInterface $costCenterBudgetChoiceBuilder,
     ) {
     }
 
@@ -97,7 +94,7 @@ class CostCenterBudgetFormFieldExpander implements CostCenterBudgetFormFieldExpa
         CostCenterCollectionTransfer $costCenterCollectionTransfer,
         bool $isSelectionRequired,
     ): bool {
-        $costCenterChoices = $this->buildCostCenterChoices($costCenterCollectionTransfer);
+        $costCenterChoices = $this->costCenterBudgetChoiceBuilder->buildCostCenterChoices($costCenterCollectionTransfer);
 
         if ($costCenterChoices === []) {
             return false;
@@ -142,7 +139,7 @@ class CostCenterBudgetFormFieldExpander implements CostCenterBudgetFormFieldExpa
         string $currencyIsoCode,
         bool $isSelectionRequired,
     ): bool {
-        $budgetChoices = $this->buildBudgetChoices($costCenterCollectionTransfer);
+        $budgetChoices = $this->costCenterBudgetChoiceBuilder->buildBudgetChoices($costCenterCollectionTransfer);
 
         if ($budgetChoices === []) {
             return false;
@@ -168,8 +165,8 @@ class CostCenterBudgetFormFieldExpander implements CostCenterBudgetFormFieldExpa
         string $currencyIsoCode,
         bool $isSelectionRequired,
     ): array {
-        $budgetCostCenterMap = $this->buildBudgetCostCenterMap($costCenterCollectionTransfer);
-        $budgetChoiceAttrs = $this->buildBudgetChoiceAttrs($costCenterCollectionTransfer, $currencyIsoCode);
+        $budgetCostCenterMap = $this->costCenterBudgetChoiceBuilder->buildBudgetCostCenterMap($costCenterCollectionTransfer);
+        $budgetChoiceAttrs = $this->costCenterBudgetChoiceBuilder->buildBudgetChoiceAttrs($costCenterCollectionTransfer, $currencyIsoCode);
 
         $constraints = [
             new Callback(function ($idBudget, ExecutionContextInterface $context) use ($budgetCostCenterMap): void {
@@ -324,99 +321,6 @@ class CostCenterBudgetFormFieldExpander implements CostCenterBudgetFormFieldExpa
             isset($decoded[QuoteTransfer::ID_COST_CENTER]) ? (int)$decoded[QuoteTransfer::ID_COST_CENTER] : null,
             isset($decoded[QuoteTransfer::ID_BUDGET]) ? (int)$decoded[QuoteTransfer::ID_BUDGET] : null,
         ];
-    }
-
-    /**
-     * @return array<string, int>
-     */
-    protected function buildCostCenterChoices(CostCenterCollectionTransfer $costCenterCollectionTransfer): array
-    {
-        $choices = [];
-
-        foreach ($costCenterCollectionTransfer->getCostCenters() as $costCenterTransfer) {
-            $choices[$costCenterTransfer->getNameOrFail()] = $costCenterTransfer->getIdCostCenterOrFail();
-        }
-
-        return $choices;
-    }
-
-    /**
-     * @return array<string, int>
-     */
-    protected function buildBudgetChoices(CostCenterCollectionTransfer $costCenterCollectionTransfer): array
-    {
-        $choices = [];
-
-        foreach ($costCenterCollectionTransfer->getCostCenters() as $costCenterTransfer) {
-            foreach ($this->getSelectableBudgets($costCenterTransfer) as $budgetTransfer) {
-                $choices[$budgetTransfer->getNameOrFail()] = $budgetTransfer->getIdBudgetOrFail();
-            }
-        }
-
-        return $choices;
-    }
-
-    /**
-     * @return array<int, int>
-     */
-    protected function buildBudgetCostCenterMap(CostCenterCollectionTransfer $costCenterCollectionTransfer): array
-    {
-        $map = [];
-
-        foreach ($costCenterCollectionTransfer->getCostCenters() as $costCenterTransfer) {
-            foreach ($this->getSelectableBudgets($costCenterTransfer) as $budgetTransfer) {
-                $map[$budgetTransfer->getIdBudgetOrFail()] = $costCenterTransfer->getIdCostCenterOrFail();
-            }
-        }
-
-        return $map;
-    }
-
-    /**
-     * @return array<int, array<string, string>>
-     */
-    protected function buildBudgetChoiceAttrs(
-        CostCenterCollectionTransfer $costCenterCollectionTransfer,
-        string $currencyIsoCode,
-    ): array {
-        $attrs = [];
-
-        foreach ($costCenterCollectionTransfer->getCostCenters() as $costCenterTransfer) {
-            foreach ($this->getSelectableBudgets($costCenterTransfer) as $budgetTransfer) {
-                $budgetSummaryTransfer = $this->budgetSummaryFormatter->formatBudgetSummary($budgetTransfer, $currencyIsoCode);
-
-                $attrs[$budgetTransfer->getIdBudgetOrFail()] = [
-                    'data-cost-center-id' => (string)$costCenterTransfer->getIdCostCenterOrFail(),
-                    'data-total-amount' => (string)$budgetSummaryTransfer->getTotalAmount(),
-                    'data-used-amount' => (string)$budgetSummaryTransfer->getUsedAmount(),
-                    'data-total-formatted' => (string)$budgetSummaryTransfer->getTotalFormatted(),
-                    'data-used-formatted' => (string)$budgetSummaryTransfer->getUsedFormatted(),
-                    'data-remaining-formatted' => (string)$budgetSummaryTransfer->getRemainingFormatted(),
-                    'data-usage-formatted' => (string)$budgetSummaryTransfer->getUsageInfo(),
-                ];
-            }
-        }
-
-        return $attrs;
-    }
-
-    /**
-     * @return array<\Generated\Shared\Transfer\BudgetTransfer>
-     */
-    protected function getSelectableBudgets(CostCenterTransfer $costCenterTransfer): array
-    {
-        $selectableEnforcementRules = $this->purchasingControlConfig->getRecurringOrderSelectableBudgetEnforcementRules();
-        $budgetTransfers = [];
-
-        foreach ($costCenterTransfer->getBudgets() as $budgetTransfer) {
-            if (!in_array($budgetTransfer->getEnforcementRule(), $selectableEnforcementRules, true)) {
-                continue;
-            }
-
-            $budgetTransfers[] = $budgetTransfer;
-        }
-
-        return $budgetTransfers;
     }
 
     protected function toId(mixed $value): ?int

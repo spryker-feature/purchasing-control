@@ -94,18 +94,8 @@ class ShipmentExpenseCalculator implements ShipmentExpenseCalculatorInterface
             }
         }
 
-        $shipmentGroupItems = [];
-        foreach ($orderTransfer->getItems() as $itemTransfer) {
-            $idShipment = $itemTransfer->getShipment()?->getIdSalesShipment();
-            if ($idShipment === null) {
-                continue;
-            }
-
-            $shipmentGroupItems[$idShipment][] = $itemTransfer->getIdSalesOrderItemOrFail();
-        }
-
         $fullyProcessedShipmentIds = [];
-        foreach ($shipmentGroupItems as $idShipment => $itemIds) {
+        foreach ($this->groupItemIdsByShipmentId($orderTransfer) as $idShipment => $itemIds) {
             if (count(array_intersect($itemIds, array_keys($currentProcessedItemIdIndex))) === 0) {
                 continue;
             }
@@ -116,5 +106,23 @@ class ShipmentExpenseCalculator implements ShipmentExpenseCalculatorInterface
         }
 
         return $fullyProcessedShipmentIds;
+    }
+
+    /**
+     * @return array<int, array<int>>
+     */
+    protected function groupItemIdsByShipmentId(OrderTransfer $orderTransfer): array
+    {
+        $shipmentGroupItems = [];
+        foreach ($orderTransfer->getItems() as $itemTransfer) {
+            $idShipment = $itemTransfer->getShipment()?->getIdSalesShipment();
+            if ($idShipment === null) {
+                continue;
+            }
+
+            $shipmentGroupItems[$idShipment][] = $itemTransfer->getIdSalesOrderItemOrFail();
+        }
+
+        return $shipmentGroupItems;
     }
 }

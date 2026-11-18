@@ -9,12 +9,14 @@ namespace SprykerFeature\Zed\PurchasingControl\Persistence;
 
 use ArrayObject;
 use Generated\Shared\Transfer\BudgetCollectionTransfer;
+use Generated\Shared\Transfer\BudgetConditionsTransfer;
 use Generated\Shared\Transfer\BudgetConsumptionCollectionTransfer;
 use Generated\Shared\Transfer\BudgetConsumptionCriteriaTransfer;
 use Generated\Shared\Transfer\BudgetConsumptionTransfer;
 use Generated\Shared\Transfer\BudgetCriteriaTransfer;
 use Generated\Shared\Transfer\BudgetTransfer;
 use Generated\Shared\Transfer\CostCenterCollectionTransfer;
+use Generated\Shared\Transfer\CostCenterConditionsTransfer;
 use Generated\Shared\Transfer\CostCenterCriteriaTransfer;
 use Generated\Shared\Transfer\CostCenterTransfer;
 use Generated\Shared\Transfer\PaginationTransfer;
@@ -145,6 +147,13 @@ class PurchasingControlRepository extends AbstractRepository implements Purchasi
             ->distinct();
         }
 
+        return $this->applyCostCenterAttributeConditions($costCenterQuery, $conditionsTransfer);
+    }
+
+    protected function applyCostCenterAttributeConditions(
+        SpyCostCenterQuery $costCenterQuery,
+        CostCenterConditionsTransfer $conditionsTransfer,
+    ): SpyCostCenterQuery {
         if ($conditionsTransfer->getIsActive() !== null) {
             $costCenterQuery->filterByIsActive($conditionsTransfer->getIsActive());
         }
@@ -246,6 +255,11 @@ class PurchasingControlRepository extends AbstractRepository implements Purchasi
             $budgetQuery->filterByFkCostCenter_In($conditionsTransfer->getCostCenterIds());
         }
 
+        return $this->applyBudgetValueConditions($budgetQuery, $conditionsTransfer);
+    }
+
+    protected function applyBudgetValueConditions(SpyBudgetQuery $budgetQuery, BudgetConditionsTransfer $conditionsTransfer): SpyBudgetQuery
+    {
         if ($conditionsTransfer->getIsActive() !== null) {
             $budgetQuery->filterByIsActive($conditionsTransfer->getIsActive());
         }

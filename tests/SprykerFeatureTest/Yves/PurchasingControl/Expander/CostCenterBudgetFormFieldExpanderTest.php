@@ -23,6 +23,7 @@ use Spryker\Client\Currency\CurrencyClientInterface;
 use Spryker\Client\Customer\CustomerClientInterface;
 use Spryker\Service\UtilEncoding\UtilEncodingServiceInterface;
 use SprykerFeature\Shared\PurchasingControl\PurchasingControlConfig as SharedPurchasingControlConfig;
+use SprykerFeature\Yves\PurchasingControl\Builder\CostCenterBudgetChoiceBuilder;
 use SprykerFeature\Yves\PurchasingControl\Expander\CostCenterBudgetFormFieldExpander;
 use SprykerFeature\Yves\PurchasingControl\Formatter\BudgetSummaryFormatterInterface;
 use SprykerFeature\Yves\PurchasingControl\PurchasingControlConfig;
@@ -273,10 +274,9 @@ class CostCenterBudgetFormFieldExpanderTest extends Unit
         return new CostCenterBudgetFormFieldExpander(
             $customerClientMock,
             $costCenterReaderMock,
-            $budgetSummaryFormatterMock,
             $utilEncodingServiceMock,
             $currencyClientMock,
-            $configMock,
+            new CostCenterBudgetChoiceBuilder($budgetSummaryFormatterMock, $configMock),
         );
     }
 

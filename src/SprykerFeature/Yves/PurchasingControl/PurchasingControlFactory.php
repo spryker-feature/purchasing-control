@@ -25,6 +25,8 @@ use Spryker\Service\UtilEncoding\UtilEncodingServiceInterface;
 use Spryker\Shared\Application\ApplicationConstants;
 use Spryker\Yves\Kernel\AbstractFactory;
 use SprykerFeature\Client\PurchasingControl\PurchasingControlClientInterface;
+use SprykerFeature\Yves\PurchasingControl\Builder\CostCenterBudgetChoiceBuilder;
+use SprykerFeature\Yves\PurchasingControl\Builder\CostCenterBudgetChoiceBuilderInterface;
 use SprykerFeature\Yves\PurchasingControl\Expander\CostCenterBudgetFormFieldExpander;
 use SprykerFeature\Yves\PurchasingControl\Expander\CostCenterBudgetFormFieldExpanderInterface;
 use SprykerFeature\Yves\PurchasingControl\Expander\CostCenterOrderSearchFormExpander;
@@ -315,9 +317,16 @@ class PurchasingControlFactory extends AbstractFactory
         return new CostCenterBudgetFormFieldExpander(
             $this->getCustomerClient(),
             $this->createCostCenterReader(),
-            $this->createBudgetSummaryFormatter(),
             $this->getUtilEncodingService(),
             $this->getCurrencyClient(),
+            $this->createCostCenterBudgetChoiceBuilder(),
+        );
+    }
+
+    public function createCostCenterBudgetChoiceBuilder(): CostCenterBudgetChoiceBuilderInterface
+    {
+        return new CostCenterBudgetChoiceBuilder(
+            $this->createBudgetSummaryFormatter(),
             $this->getConfig(),
         );
     }
